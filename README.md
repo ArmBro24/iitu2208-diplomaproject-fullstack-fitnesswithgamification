@@ -5,6 +5,10 @@
 ██║     ██║   ██║   ╚██████╔╝██║  ██║╚██████╔╝██║ ╚═╝ ██║██║  ██║
 ╚═╝     ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝
     FITNESS • FULLSTACK • GAMIFICATION • DIPLOMA PROJECT
+    
+
+<p align="center"> <img src="https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge"> <img src="https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge"> <img src="https://img.shields.io/badge/backend-API%20online-lightgrey?style=for-the-badge"> <img src="https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge"> </p>
+
 
 ---
 
@@ -22,7 +26,7 @@
 
 ---
 
-## 🎯 **Цель проекта**
+## **Цель проекта**
 
 Создать full-stack систему **геймификации фитнес-процессов**, где пользователи смогут:
 
