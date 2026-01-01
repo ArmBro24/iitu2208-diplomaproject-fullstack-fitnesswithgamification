@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: diploma-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: Arm
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - diploma-net
+
+volumes:
+  pgdata:
+
+networks:
+  diploma-net:
+    driver: bridge
