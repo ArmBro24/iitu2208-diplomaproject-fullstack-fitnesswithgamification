@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import LoadingScreen from './components/LoadingScreen';
-import Trainers from './pages/Trainers';
+import Register from './pages/Register';
+import Login from './pages/Login';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
+    // Теперь по умолчанию после загрузки будет страница регистрации
+    const [currentPage, setCurrentPage] = useState('register');
 
     useEffect(() => {
-        // Установили 7 секунд (7000 мс)
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 7000);
+        }, 3000);
         return () => clearTimeout(timer);
     }, []);
 
@@ -17,7 +19,16 @@ function App() {
         return <LoadingScreen />;
     }
 
-    return <Trainers />;
+    // Логика переключения
+    return (
+        <>
+            {currentPage === 'register' ? (
+                <Register onNavigate={() => setCurrentPage('login')} />
+            ) : (
+                <Login onNavigate={() => setCurrentPage('register')} />
+            )}
+        </>
+    );
 }
 
 export default App;

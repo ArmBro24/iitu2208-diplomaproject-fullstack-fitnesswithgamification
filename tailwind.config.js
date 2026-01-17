@@ -1,9 +1,13 @@
+/** @type {import('tailwindcss').Config} */
 export default {
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         extend: {
+            fontFamily: {
+                // Добавляем поддержку шрифта Rubik
+                rubik: ['Rubik', 'sans-serif'],
+            },
             animation: {
-                // Изменили на 7s
                 'spin-slow': 'spin-slow 7s linear infinite',
             },
             keyframes: {
