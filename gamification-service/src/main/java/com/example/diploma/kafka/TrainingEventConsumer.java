@@ -1,0 +1,33 @@
+package com.example.diploma.kafka;
+
+import com.example.diploma.event.TrainingLogApprovedEvent;
+import com.example.diploma.service.GamificationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TrainingEventConsumer {
+
+    private final GamificationService gamificationService;
+
+    @KafkaListener(topics = KafkaTopics.TRAINING_LOG_APPROVED)
+    public void onLogApproved(TrainingLogApprovedEvent event) {
+
+        log.info("GAMIFICATION RECEIVED: sessionId={}, memberId={}, points={}, approvedAt={}",
+                event.sessionId(),
+                event.memberId(),
+                event.points(),
+                event.approvedAt()
+        );
+
+        // начисляем очки в Character + пишем запись в ledger
+        String comment = "Approved training log. sessionId=" + event.sessionId();
+
+        // это начисление именно из тренировки → delta = points
+        gamificationService.applyPoints(event.memberId(), event.points(), comment);
+    }
+}
