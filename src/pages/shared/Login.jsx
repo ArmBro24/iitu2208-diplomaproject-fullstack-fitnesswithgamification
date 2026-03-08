@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FiMail, FiLock } from 'react-icons/fi';
 
-import bgMobile from '../assets/login_back_mob.jpg';
-import bgDesktop from '../assets/login_back_desk.jpg';
+import bgMobile from '../../assets/login_back_mob.jpg';
+import bgDesktop from '../../assets/login_back_desk.jpg';
 
-const Login = ({ onNavigate }) => {
+const Login = ({ onNavigate, onLogin }) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    // Добавляем состояние для email
+    const [email, setEmail] = useState('');
 
     useEffect(() => {
         const animation = requestAnimationFrame(() => {
@@ -13,6 +15,13 @@ const Login = ({ onNavigate }) => {
         });
         return () => cancelAnimationFrame(animation);
     }, []);
+
+    // Обработчик отправки формы
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Передаем введенный email в App.jsx
+        onLogin(email);
+    };
 
     return (
         <div className="relative min-h-screen w-full bg-[#0a1211] overflow-hidden flex items-center justify-start font-rubik">
@@ -37,45 +46,42 @@ const Login = ({ onNavigate }) => {
 
             {/* ВЫЕЗЖАЮЩАЯ ШТОРКА */}
             <div className={`
-                /* Общие свойства */
                 absolute z-10 transition-all duration-[1000ms] ease-out flex items-center justify-center
-                
-                /* МОБИЛЬНАЯ ЛОГИКА */
                 left-0 top-1/2 -translate-y-1/2
                 ${isLoaded ? 'translate-x-0' : '-translate-x-full'}
-                
-                /* ДЕСКТОП ЛОГИКА */
                 md:left-1/2 md:ml-[-400px] md:top-0 md:translate-x-0
                 ${isLoaded ? 'md:translate-y-0' : 'md:-translate-y-full'}
             `}>
                 <div
                     className={`
                         bg-[#071019]/60 backdrop-blur-sm flex flex-col justify-center px-8 shadow-2xl transition-all duration-500
-                        
-                        /* Мобильные размеры */
                         w-[340px] h-[550px]
                         rounded-[0px_300px_40px_0px]
-                        
-                        /* Десктоп размеры */
                         md:w-[800px] md:h-[600px]
                         md:rounded-[0px_0px_300px_300px]
                     `}
                 >
                     <div className="w-full max-w-[340px] md:max-w-md mx-auto">
 
-                        {/* ЗАГОЛОВОК — md:justify-center центрирует на десктопе */}
-                        <div className="flex items-baseline gap-2 mb-10 md:mb-12 justify-start md:justify-center">
+                        <div className="flex items-baseline gap-2 mb-10 md:mb-12 justify-start">
                             <h1 className="text-[#c1cf98] text-4xl md:text-5xl font-black tracking-tight">
                                 HeroFit
                             </h1>
                             <span className="text-gray-400 text-xl font-normal">Login</span>
                         </div>
 
-                        {/* ФОРМА */}
-                        <form className="w-full space-y-6" onSubmit={(e) => e.preventDefault()}>
+                        {/* Привязываем handleSubmit к форме */}
+                        <form className="w-full space-y-6" onSubmit={handleSubmit}>
                             <div className="relative">
                                 <FiMail className="input-icon" />
-                                <input type="email" placeholder="e-mail address" className="auth-input pl-12" />
+                                <input
+                                    type="email"
+                                    placeholder="e-mail address"
+                                    className="auth-input pl-12"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
                             </div>
 
                             <div className="relative">
@@ -87,10 +93,10 @@ const Login = ({ onNavigate }) => {
                             </div>
 
                             <div className="flex flex-col gap-8 mt-8 w-full">
-                                {/* md:text-center центрирует текст вопроса на десктопе */}
-                                <p className="text-gray-500 text-[0.95rem] m-0 leading-none pl-2 md:pl-0 md:text-center">
+                                <p className="text-gray-500 text-[0.95rem] m-0 leading-none pl-2">
                                     Don't have an account?
                                     <button
+                                        type="button"
                                         onClick={onNavigate}
                                         className="text-white hover:underline ml-1 bg-transparent border-none p-0 cursor-pointer font-medium"
                                     >
@@ -98,8 +104,7 @@ const Login = ({ onNavigate }) => {
                                     </button>
                                 </p>
 
-                                {/* md:justify-center центрирует кнопку на десктопе */}
-                                <div className="w-full flex justify-end md:justify-center">
+                                <div className="w-full flex justify-end">
                                     <button
                                         type="submit"
                                         className="px-10 py-3.5 rounded-full border border-[#c1cf98] text-[#c1cf98] hover:bg-[#c1cf98] hover:text-black transition-all flex items-center gap-2 group whitespace-nowrap"
@@ -125,13 +130,11 @@ const Login = ({ onNavigate }) => {
                     outline: none;
                     transition: all 0.2s ease;
                 }
-
                 .auth-input:focus {
                     background: rgba(255, 255, 255, 0.1);
                     border-color: rgba(193, 207, 152, 0.8);
                     box-shadow: 0 0 15px rgba(193, 207, 152, 0.1);
                 }
-
                 .input-icon {
                     position: absolute;
                     left: 1.1rem;
@@ -142,7 +145,6 @@ const Login = ({ onNavigate }) => {
                     z-index: 10;
                     pointer-events: none;
                 }
-
                 .auth-input::placeholder {
                     color: #6b7280;
                     font-size: 0.95rem;
