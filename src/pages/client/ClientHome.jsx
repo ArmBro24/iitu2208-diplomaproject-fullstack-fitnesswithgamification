@@ -7,7 +7,7 @@ import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
 
-const ClientHome = ({ onLogout, onOpenMenu }) => {
+const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     return (
@@ -99,7 +99,7 @@ const ClientHome = ({ onLogout, onOpenMenu }) => {
                     <div className="[grid-area:coaches] flex items-stretch md:items-end md:pr-6">
                         <div
                             className="w-full h-full md:h-[95%] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
-                            <img src={coachesImg} alt="Coaches" className="w-full h-full object-cover" />
+                            <img src={coachesImg} alt="Coaches" className="w-full h-full object-cover"/>
                         </div>
                     </div>
 
@@ -113,8 +113,9 @@ const ClientHome = ({ onLogout, onOpenMenu }) => {
                         </div>
 
                         <div className="md:[grid-area:plans] flex items-stretch md:pl-10 md:pb-10">
-                            <div className="w-full h-40 md:h-full rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
-                                <img src={plansImg} alt="Plans" className="w-full h-full object-cover" />
+                            <div
+                                className="w-full h-40 md:h-full rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
+                                <img src={plansImg} alt="Plans" className="w-full h-full object-cover"/>
                             </div>
                         </div>
 
@@ -129,7 +130,7 @@ const ClientHome = ({ onLogout, onOpenMenu }) => {
                     {/* CALENDAR */}
                     <div className="[grid-area:calendar] flex items-end mt-4">
                         <div className="w-[85%] md:w-full">
-                            <Calendar isEdge={true} />
+                            <Calendar isEdge={true} onDateClick={onSelectTraining}/>
                         </div>
                     </div>
                 </div>

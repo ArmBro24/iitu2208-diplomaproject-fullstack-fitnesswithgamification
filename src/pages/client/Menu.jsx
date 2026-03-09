@@ -11,7 +11,7 @@ import {
 import Background from '../../components/common/Background.jsx';
 
 // Добавляем onOpenLeaderboard в пропсы
-const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents }) => {
+const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents, onOpenSupport}) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const menuItems = [
@@ -25,7 +25,11 @@ const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents }) => {
             icon: <FiGlobe size={22}/>,
             action: onOpenEvents
         },
-        { name: 'Support', icon: <FiHelpCircle size={22} />, action: () => console.log('Support soon...') },
+        {
+            name: 'Support',
+            icon: <FiHelpCircle size={22} />,
+            action: onOpenSupport
+        },
     ];
 
     return (

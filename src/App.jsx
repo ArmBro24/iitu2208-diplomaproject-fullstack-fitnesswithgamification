@@ -6,10 +6,13 @@ import ClientHome from './pages/client/ClientHome.jsx';
 import Menu from './pages/client/Menu.jsx';
 import Leaderboard from './pages/shared/Leaderboard.jsx';
 import Events from './pages/shared/Events.jsx';
+import Support from './pages/shared/Support.jsx';
+import ClientTraining from './pages/client/ClientTraining.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState('register');
+    const [selectedTraining, setSelectedTraining] = useState(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -47,6 +50,10 @@ function App() {
                 <ClientHome
                     onLogout={() => setCurrentPage('login')}
                     onOpenMenu={() => setCurrentPage('menu')}
+                    onSelectTraining={(trainingData) => {
+                        setSelectedTraining(trainingData);
+                        setCurrentPage('training');
+                    }}
                 />
             )}
 
@@ -56,6 +63,7 @@ function App() {
                     onLogout={() => setCurrentPage('login')}
                     onOpenLeaderboard={() => setCurrentPage('leaderboard')}
                     onOpenEvents={() => setCurrentPage('events')}
+                    onOpenSupport={() => setCurrentPage('support')}
                 />
             )}
 
@@ -68,6 +76,17 @@ function App() {
 
             {currentPage === 'events' && (
                 <Events onBack={() => setCurrentPage('menu')} />
+            )}
+
+            {currentPage === 'support' && (
+                <Support onBack={() => setCurrentPage('menu')} />
+            )}
+
+            {currentPage === 'training' && (
+                <ClientTraining
+                    trainingData={selectedTraining}
+                    onBack={() => setCurrentPage('clientHome')}
+                />
             )}
         </>
     );
