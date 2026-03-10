@@ -44,8 +44,7 @@ const Events = ({ onBack }) => {
                         {eventsData.map((event) => (
                             <div
                                 key={event.id}
-                                className="relative flex-none w-[85%] sm:w-[60%] md:w-[450px] aspect-[3/4] md:aspect-[4/5]
-                                           rounded-[40px] overflow-hidden snap-center
+                                className="relative flex-none w-[85%] sm:w-[60%] md:w-[350px] aspect-[3/4] md:aspect-[4/5]                                           rounded-[40px] overflow-hidden snap-center
                                            group cursor-pointer border-2 border-transparent
                                            hover:border-[#c1cf98] active:border-[#c1cf98]
                                            transition-all duration-300 shadow-2xl"
@@ -72,10 +71,19 @@ const Events = ({ onBack }) => {
                         ))}
                     </div>
 
-                    {/* BOTTOM DESCRIPTION: уменьшен отступ сверху (py-6 вместо py-10) и ширина во весь экран */}
+                    {/* BOTTOM DESCRIPTION */}
                     <div className="px-6 md:px-16 py-6 md:py-10 shrink-0">
-                        <p className="text-[#c1cf98] text-lg md:text-2xl font-medium leading-relaxed w-full">
-                            Join marathons, flashmobs, and special challenges to push your limits and have fun with the community.
+                        {/* Добавленный заголовок */}
+                        <div className="flex items-center gap-4 mb-4 md:mb-6">
+                            <h3 className="text-white/70 text-2xl md:text-4xl font-bold tracking-tight">
+                                Community <span className="text-[#c1cf98]/80">&</span> Spirit
+                            </h3>
+                            <div className="h-[2px] flex-grow bg-white/10 hidden md:block"></div>
+                        </div>
+
+                        <p className="text-[#c1cf98]/90 text-lg md:text-2xl font-medium leading-relaxed w-full max-w-5xl">
+                            Join marathons, flashmobs, and special challenges to push your limits and have fun with the
+                            community.
                             Every event is a new opportunity to learn, grow, and connect with people who share your passion.
                         </p>
                     </div>

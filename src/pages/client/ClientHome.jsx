@@ -7,7 +7,7 @@ import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
 
-const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining }) => {
+const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     return (
@@ -98,6 +98,7 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining }) => {
                     {/* COACHES BLOCK */}
                     <div className="[grid-area:coaches] flex items-stretch md:items-end md:pr-6">
                         <div
+                            onClick={onOpenTrainers}
                             className="w-full h-full md:h-[95%] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
                             <img src={coachesImg} alt="Coaches" className="w-full h-full object-cover"/>
                         </div>

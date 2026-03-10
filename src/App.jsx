@@ -8,6 +8,7 @@ import Leaderboard from './pages/shared/Leaderboard.jsx';
 import Events from './pages/shared/Events.jsx';
 import Support from './pages/shared/Support.jsx';
 import ClientTraining from './pages/client/ClientTraining.jsx';
+import Trainers from './pages/client/Trainers.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +51,7 @@ function App() {
                 <ClientHome
                     onLogout={() => setCurrentPage('login')}
                     onOpenMenu={() => setCurrentPage('menu')}
+                    onOpenTrainers={() => setCurrentPage('trainers')}
                     onSelectTraining={(trainingData) => {
                         setSelectedTraining(trainingData);
                         setCurrentPage('training');
@@ -87,6 +89,10 @@ function App() {
                     trainingData={selectedTraining}
                     onBack={() => setCurrentPage('clientHome')}
                 />
+            )}
+
+            {currentPage === 'trainers' && (
+                <Trainers onBack={() => setCurrentPage('clientHome')} />
             )}
         </>
     );
