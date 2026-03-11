@@ -7,7 +7,7 @@ import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
 
-const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers }) => {
+const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, onOpenSubscribtion }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     return (
@@ -115,8 +115,15 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers }) 
 
                         <div className="md:[grid-area:plans] flex items-stretch md:pl-10 md:pb-10">
                             <div
-                                className="w-full h-40 md:h-full rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
-                                <img src={plansImg} alt="Plans" className="w-full h-full object-cover"/>
+                                onClick={onOpenSubscribtion}
+                                className="w-full h-40 md:h-full rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent cursor-pointer hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300 group"
+                            >
+                                <img src={plansImg} alt="Plans"
+                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                                {/* Можно добавить легкий оверлей с текстом поверх картинки, чтобы было понятно, что это кликабельно */}
+                                <div
+                                    className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                </div>
                             </div>
                         </div>
 

@@ -9,6 +9,8 @@ import Events from './pages/shared/Events.jsx';
 import Support from './pages/shared/Support.jsx';
 import ClientTraining from './pages/client/ClientTraining.jsx';
 import Trainers from './pages/client/Trainers.jsx';
+// Импортируем новую страницу
+import Subscribtion from './pages/client/Subscribtion.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -52,11 +54,18 @@ function App() {
                     onLogout={() => setCurrentPage('login')}
                     onOpenMenu={() => setCurrentPage('menu')}
                     onOpenTrainers={() => setCurrentPage('trainers')}
+                    // Передаем функцию открытия абонементов
+                    onOpenSubscribtion={() => setCurrentPage('subscribtion')}
                     onSelectTraining={(trainingData) => {
                         setSelectedTraining(trainingData);
                         setCurrentPage('training');
                     }}
                 />
+            )}
+
+            {/* Добавляем рендер страницы абонементов */}
+            {currentPage === 'subscribtion' && (
+                <Subscribtion onBack={() => setCurrentPage('clientHome')} />
             )}
 
             {currentPage === 'menu' && (
@@ -70,10 +79,7 @@ function App() {
             )}
 
             {currentPage === 'leaderboard' && (
-                <Leaderboard
-                    // При нажатии "Назад" на лидерборде возвращаемся в Меню
-                    onBack={() => setCurrentPage('menu')}
-                />
+                <Leaderboard onBack={() => setCurrentPage('menu')} />
             )}
 
             {currentPage === 'events' && (
