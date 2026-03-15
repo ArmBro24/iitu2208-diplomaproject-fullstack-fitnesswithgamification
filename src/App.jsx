@@ -9,12 +9,13 @@ import Events from './pages/shared/Events.jsx';
 import Support from './pages/shared/Support.jsx';
 import ClientTraining from './pages/client/ClientTraining.jsx';
 import Trainers from './pages/client/Trainers.jsx';
-// Импортируем новую страницу
 import Subscribtion from './pages/client/Subscribtion.jsx';
+import TrainerProfile from './pages/client/TrainerProfile.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState('register');
+    const [selectedTrainer, setSelectedTrainer] = useState(null);
     const [selectedTraining, setSelectedTraining] = useState(null);
 
     useEffect(() => {
@@ -54,7 +55,6 @@ function App() {
                     onLogout={() => setCurrentPage('login')}
                     onOpenMenu={() => setCurrentPage('menu')}
                     onOpenTrainers={() => setCurrentPage('trainers')}
-                    // Передаем функцию открытия абонементов
                     onOpenSubscribtion={() => setCurrentPage('subscribtion')}
                     onSelectTraining={(trainingData) => {
                         setSelectedTraining(trainingData);
@@ -98,7 +98,20 @@ function App() {
             )}
 
             {currentPage === 'trainers' && (
-                <Trainers onBack={() => setCurrentPage('clientHome')} />
+                <Trainers
+                    onBack={() => setCurrentPage('clientHome')}
+                    onSelectTrainer={(trainer) => {
+                        setSelectedTrainer(trainer);
+                        setCurrentPage('trainerProfile');
+                    }}
+                />
+            )}
+
+            {currentPage === 'trainerProfile' && (
+                <TrainerProfile
+                    trainer={selectedTrainer}
+                    onBack={() => setCurrentPage('trainers')}
+                />
             )}
         </>
     );

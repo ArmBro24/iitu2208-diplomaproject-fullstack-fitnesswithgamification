@@ -10,14 +10,63 @@ import tr4 from '../../assets/trainers/trainer4.jpg';
 import tr5 from '../../assets/trainers/trainer5.jpg';
 
 const trainersData = [
-    { id: 1, name: "Alex", surname: "Rivers", img: tr1 },
-    { id: 2, name: "Sarah", surname: "Jenkins", img: tr2 },
-    { id: 3, name: "Marcus", surname: "Strong", img: tr3 },
-    { id: 4, name: "Elena", surname: "Vance", img: tr4 },
-    { id: 5, name: "David", surname: "Stone", img: tr5 },
+    {
+        id: 1, name: "Alex", surname: "Rivers", img: tr1,
+        points: 288,
+        phone: "+7 (777) 777 77 77",
+        quote: "Every session is a chance to learn new skills, stay motivated, and grow stronger with the support of professionals who care.",
+        reviews: [
+            "Alex always pushes me to give my best without ever losing motivation",
+            "I've never felt stronger and more confident since training with him."
+        ]
+    },
+    {
+        id: 2, name: "Sarah", surname: "Jenkins", img: tr2,
+        points: 315,
+        phone: "+7 (777) 888 88 88",
+        quote: "Fitness is a journey, not a destination. It's about building habits that last a lifetime.",
+        reviews: [
+            "Sarah's energy is contagious! Best cardio sessions ever.",
+            "She really pays attention to technique and safety.",
+            "Sarah's energy is contagious! Best cardio sessions ever.",
+            "She really pays attention to technique and safety.",
+            "Sarah's energy is contagious! Best cardio sessions ever.",
+            "She really pays attention to technique and safety."
+        ]
+    },
+    {
+        id: 3, name: "Michael", surname: "Scott", img: tr3,
+        points: 210,
+        phone: "+7 (777) 999 99 99",
+        quote: "Consistency is key. You don't have to be the best, you just have to be better than yesterday.",
+        reviews: [
+            "Very professional approach to strength training.",
+            "Great personality, makes the workout fly by."
+        ]
+    },
+    {
+        id: 4, name: "Elena", surname: "Vance", img: tr4,
+        points: 420,
+        phone: "+7 (777) 111 22 33",
+        quote: "Your body can stand almost anything. It’s your mind that you have to convince.",
+        reviews: [
+            "Elena is a master of yoga and flexibility. Highly recommend!",
+            "I recovered from my back injury thanks to her program."
+        ]
+    },
+    {
+        id: 5, name: "David", surname: "Miller", img: tr5,
+        points: 156,
+        phone: "+7 (777) 444 55 66",
+        quote: "Train hard, eat smart, and trust the process. Results take time, but they are worth it.",
+        reviews: [
+            "Tough but fair. David knows how to get you in shape fast.",
+            "Excellent nutrition advice alongside the training."
+        ]
+    }
 ];
 
-const Trainers = ({ onBack }) => {
+const Trainers = ({ onBack, onSelectTrainer }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -27,7 +76,7 @@ const Trainers = ({ onBack }) => {
 
     const toggleSearch = () => {
         setIsSearchOpen(!isSearchOpen);
-        if (isSearchOpen) setSearchTerm(''); // Сброс при закрытии
+        if (isSearchOpen) setSearchTerm('');
     };
 
     return (
@@ -38,7 +87,7 @@ const Trainers = ({ onBack }) => {
                 <nav className="relative z-30 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between shrink-0">
                     <button
                         onClick={onBack}
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all hover:scale-105 active:scale-95"
+                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all active:scale-95"
                     >
                         <FiArrowLeft className="text-[#c1cf98]"/>
                     </button>
@@ -49,7 +98,7 @@ const Trainers = ({ onBack }) => {
 
                     <button
                         onClick={toggleSearch}
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all hover:scale-105 active:scale-95"
+                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all active:scale-95"
                     >
                         {isSearchOpen ? <FiX className="text-[#c1cf98]"/> : <FiSearch className="text-[#c1cf98]"/>}
                     </button>
@@ -75,12 +124,16 @@ const Trainers = ({ onBack }) => {
                 {/* MAIN CONTENT */}
                 <div className="relative z-10 flex flex-col flex-grow">
                     {filteredTrainers.length > 0 ? (
-                        <div
-                            className="flex items-center overflow-x-auto no-scrollbar snap-x snap-mandatory px-6 md:px-16 gap-6 md:gap-10 py-4">
+                        <div className="flex items-center overflow-x-auto no-scrollbar snap-x snap-mandatory gap-6 md:gap-10 py-4">
+
+                            {/* ЛЕВЫЙ ОТСТУП ДЛЯ МОБИЛКИ */}
+                            <div className="min-w-[1.5rem] md:min-w-[4rem] shrink-0" />
+
                             {filteredTrainers.map((trainer) => (
                                 <div
                                     key={trainer.id}
-                                    className="relative flex-none w-[85%] sm:w-[60%] md:w-[320px] aspect-[3/4] md:aspect-[4/5]
+                                    onClick={() => onSelectTrainer(trainer)}
+                                    className="relative flex-none w-[80vw] sm:w-[60%] md:w-[320px] aspect-[3/4] md:aspect-[4/5]
                                                rounded-[40px] overflow-hidden snap-center
                                                group cursor-pointer border-2 border-transparent
                                                hover:border-[#c1cf98] transition-all duration-300 shadow-2xl"
@@ -88,10 +141,10 @@ const Trainers = ({ onBack }) => {
                                     <img
                                         src={trainer.img}
                                         alt={trainer.name}
-                                        className="absolute inset-0 w-full h-full object-cover"
+                                        // Добавлен object-top: фокус на лицах
+                                        className="absolute inset-0 w-full h-full object-cover object-top"
                                     />
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"/>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"/>
 
                                     <div className="absolute bottom-8 left-8">
                                         <h2 className="text-3xl md:text-4xl font-black text-white leading-none">
@@ -100,16 +153,14 @@ const Trainers = ({ onBack }) => {
                                     </div>
                                 </div>
                             ))}
+
+                            {/* ПРАВЫЙ ОТСТУП */}
+                            <div className="min-w-[1.5rem] md:min-w-[4rem] shrink-0" />
                         </div>
                     ) : (
                         <div className="flex-grow flex flex-col items-center justify-center py-20">
-                            <p className="text-red-400/60 text-xl md:text-2xl font-medium">
-                                No results found
-                            </p>
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="mt-4 text-[#c1cf98]/50 hover:text-[#c1cf98] transition-colors underline"
-                            >
+                            <p className="text-red-400/60 text-xl md:text-2xl font-medium">No results found</p>
+                            <button onClick={() => setSearchTerm('')} className="mt-4 text-[#c1cf98]/50 hover:text-[#c1cf98] transition-colors underline">
                                 Clear search
                             </button>
                         </div>
@@ -132,13 +183,8 @@ const Trainers = ({ onBack }) => {
                 </div>
             </div>
             <style>{`
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .no-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
         </Background>
     );
