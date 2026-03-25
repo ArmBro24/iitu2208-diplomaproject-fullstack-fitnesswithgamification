@@ -9,7 +9,7 @@ import tr3 from '../../assets/trainers/trainer3.jpg';
 import tr4 from '../../assets/trainers/trainer4.jpg';
 import tr5 from '../../assets/trainers/trainer5.jpg';
 
-const trainersData = [
+export const trainersData = [
     {
         id: 1, name: "Alex", surname: "Rivers", img: tr1,
         points: 288,

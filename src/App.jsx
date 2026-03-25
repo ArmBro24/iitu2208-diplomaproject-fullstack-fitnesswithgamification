@@ -11,12 +11,18 @@ import ClientTraining from './pages/client/ClientTraining.jsx';
 import Trainers from './pages/client/Trainers.jsx';
 import Subscribtion from './pages/client/Subscribtion.jsx';
 import TrainerProfile from './pages/client/TrainerProfile.jsx';
+import ClientProfile from './pages/client/ClientProfile.jsx';
+import { trainersData } from './pages/client/Trainers.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState('register');
     const [selectedTrainer, setSelectedTrainer] = useState(null);
     const [selectedTraining, setSelectedTraining] = useState(null);
+    const [coachContract, setCoachContract] = useState({
+        trainerId: null,
+        status: 'none'
+    });
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -56,6 +62,7 @@ function App() {
                     onOpenMenu={() => setCurrentPage('menu')}
                     onOpenTrainers={() => setCurrentPage('trainers')}
                     onOpenSubscribtion={() => setCurrentPage('subscribtion')}
+                    setCurrentPage={setCurrentPage}
                     onSelectTraining={(trainingData) => {
                         setSelectedTraining(trainingData);
                         setCurrentPage('training');
@@ -63,7 +70,6 @@ function App() {
                 />
             )}
 
-            {/* Добавляем рендер страницы абонементов */}
             {currentPage === 'subscribtion' && (
                 <Subscribtion onBack={() => setCurrentPage('clientHome')} />
             )}
@@ -100,6 +106,7 @@ function App() {
             {currentPage === 'trainers' && (
                 <Trainers
                     onBack={() => setCurrentPage('clientHome')}
+                    coachContract={coachContract}
                     onSelectTrainer={(trainer) => {
                         setSelectedTrainer(trainer);
                         setCurrentPage('trainerProfile');
@@ -111,6 +118,22 @@ function App() {
                 <TrainerProfile
                     trainer={selectedTrainer}
                     onBack={() => setCurrentPage('trainers')}
+                    coachContract={coachContract}
+                    setCoachContract={setCoachContract}
+                    trainersData={trainersData}
+                />
+            )}
+
+            {currentPage === 'profile' && (
+                <ClientProfile
+                    onBack={() => setCurrentPage('home')}
+                    coachContract={coachContract}
+                    trainersData={trainersData}
+                    onNavigateToTrainers={() => setCurrentPage('trainers')}
+                    onNavigateToCoachProfile={(trainer) => {
+                        setSelectedTrainer(trainer);
+                        setCurrentPage('trainerProfile');
+                    }}
                 />
             )}
         </>

@@ -7,7 +7,7 @@ import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
 
-const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, onOpenSubscribtion }) => {
+const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, onOpenSubscribtion, setCurrentPage }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     return (
@@ -36,13 +36,22 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                             <div className="flex flex-col items-center gap-4">
                                 <h2 className="text-2xl font-black tracking-tight mb-4 text-white">Client Name</h2>
                                 <div className="w-full flex flex-col gap-3">
-                                    <button className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] rounded-2xl flex items-center justify-center transition-all font-medium text-white group">
-                                        <FiUser className="absolute left-6 text-[#c1cf98]" size={20} />
-                                        <span>Profile</span>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsProfileOpen(false);
+                                            setCurrentPage('profile');
+                                        }}
+                                        className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-[#c1cf98]/60 active:border-[#c1cf98] rounded-2xl flex items-center justify-center transition-all font-medium text-white group"
+                                    >
+                                        <FiUser className="absolute left-6 text-[#c1cf98] transition-colors" size={20}/>
+                                        <span className="text-white">Profile</span>
                                     </button>
+
                                     <button onClick={onLogout}
                                             className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-red-400/40 active:border-red-400/40 rounded-2xl flex items-center justify-center transition-all font-medium text-white group">
-                                        <FiLogOut className="absolute left-6 text-red-400/60 transition-colors" size={20} />
+                                        <FiLogOut className="absolute left-6 text-red-400/60 transition-colors"
+                                                  size={20}/>
                                         <span className="text-white">Exit</span>
                                     </button>
                                 </div>
