@@ -1,39 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import trainingBg from '../../assets/training.png';
+import useStore from '../../store/useStore'; // Импортируем наш стор
 
-const ClientTraining = ({ trainingData, onBack }) => {
-    const data = trainingData || {
-        status: 'attended',
-        date: 'Sep 19, 2025',
-        time: '13:00 - 14:00',
-        title: 'Full Body Strength',
-        exercises: [
-            { name: 'push-ups', planned: 20, done: 24 },
-            { name: 'squats', planned: 30, done: 29 },
-            { name: 'plank', planned: 60, done: 55 },
-            { name: 'lunges', planned: 50, done: 57 },
-            { name: 'sit-ups', planned: 20, done: 23 },
-            { name: 'burpees', planned: 25, done: 20 },
-            { name: 'twists', planned: 15, done: 12 },   // Доп строка 1
-            { name: 'climbers', planned: 40, done: 42 }, // Доп строка 2
-            { name: 'wallsit', planned: 20, done: 21 },  // Доп строка 3
-        ],
-        points: { total: 12, endurance: 4, consistency: 3, motivation: 5 }
+const ClientTraining = () => { // 1. Пропсы больше не нужны
+    const navigate = useNavigate();
+
+    const selectedTraining = useStore((state) => state.selectedTraining);
+
+    // 3. Используем данные из стора или заглушку (на случай прямой перезагрузки страницы)
+    const data = selectedTraining || {
+        status: 'upcoming',
+        date: 'No date selected',
+        time: '--:--',
+        title: 'Select a workout',
+        exercises: [],
+        points: { total: 0, endurance: 0, consistency: 0, motivation: 0 }
     };
 
+    // 4. Синхронизируем локальный стейт упражнений с данными из стора
     const [exercises, setExercises] = useState(data.exercises);
 
-    React.useEffect(() => {
-        if (trainingData && trainingData.exercises) {
-            setExercises(trainingData.exercises);
+    useEffect(() => {
+        if (selectedTraining && selectedTraining.exercises) {
+            setExercises(selectedTraining.exercises);
         }
-    }, [trainingData]);
+    }, [selectedTraining]);
 
     const handleDoneChange = (index, value) => {
         const newExercises = [...exercises];
-        newExercises[index].done = value;
+        newExercises[index].done = Number(value); // Приводим к числу
         setExercises(newExercises);
+        // Тут в будущем можно добавить setSelectedTraining(...), если нужно сохранять прогресс в стор сразу
     };
 
     const getStatusColor = (status) => {
@@ -42,12 +41,20 @@ const ClientTraining = ({ trainingData, onBack }) => {
         return 'text-[#c1cf98]';
     };
 
+    // Если данных совсем нет и заглушка не подходит — можно вернуть редирект
+    if (!selectedTraining) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center text-white">
+                <button onClick={() => navigate('/home')}>Back to Calendar</button>
+            </div>
+        );
+    }
+
     return (
         <div
             className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat fixed inset-0 overflow-hidden"
             style={{ backgroundImage: `url(${trainingBg})` }}
         >
-            {/* Пункт 2: Вернул затемнение и небольшое размытие для глубины */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0" />
 
             <div className="relative z-10 flex flex-col h-full overflow-y-auto no-scrollbar">
@@ -55,10 +62,9 @@ const ClientTraining = ({ trainingData, onBack }) => {
                 {/* HEADER */}
                 <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center shrink-0">
                     <button
-                        onClick={onBack}
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all"
+                        onClick={() => navigate(-1)}
+                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all active:scale-95"
                     >
-                        {/* Пункт 6: Белая стрелка */}
                         <FiArrowLeft className="text-white"/>
                     </button>
 
@@ -73,14 +79,14 @@ const ClientTraining = ({ trainingData, onBack }) => {
                 {/* MAIN CONTAINER */}
                 <div className="flex flex-col md:grid md:grid-cols-[1.2fr_0.8fr] w-full max-w-[1400px] mx-auto px-6 md:px-16 gap-4 md:gap-16 pb-12">
 
-                    {/* 1. TITLE & INFO (Пункт 3: Цвет времени совпадает со статусом) */}
+                    {/* 1. TITLE & INFO */}
                     <div className="md:col-start-2 md:row-start-1 flex flex-col gap-0 md:justify-end">
                         <div className="flex items-center gap-4 text-gray-300 font-medium text-lg md:text-xl">
                             <span>{data.date}</span>
                             <span className={`${getStatusColor(data.status)} font-bold`}>{data.time}</span>
                         </div>
                         <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight">
-                            Full Body Strength
+                            {data.title}
                         </h2>
                     </div>
 
@@ -113,7 +119,7 @@ const ClientTraining = ({ trainingData, onBack }) => {
                         </table>
                     </div>
 
-                    {/* 3. POINTS (Пункт 1: Уменьшен отступ сверху в десктопе mt-0) */}
+                    {/* 3. POINTS */}
                     <div className="md:col-start-2 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 mt-1 md:mt-0">
                         <div className="shrink-0">
                             <span className={`text-4xl md:text-6xl font-bold tracking-tighter ${data.status === 'missed' ? 'text-[#f87171]' : 'text-[#c1cf98]'}`}>
@@ -121,19 +127,18 @@ const ClientTraining = ({ trainingData, onBack }) => {
                             </span>
                         </div>
 
-                        {/* Пункт 4: Крупнее в мобилке (md:gap-y-3, text-lg в мобилке) */}
                         <div className="flex flex-col gap-y-1 md:gap-y-3">
                             <PointItem color="bg-[#9b87f5]" value={data.points.endurance} label="endurance" />
                             <PointItem color="bg-[#60a5fa]" value={data.points.consistency} label="consistency" />
                             <PointItem color="bg-[#fbbf24]" value={data.points.motivation} label="motivation" />
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     );
 };
+
 
 const PointItem = ({ color, value, label }) => (
     <div className="flex items-center gap-2 md:gap-3">

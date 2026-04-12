@@ -1,20 +1,47 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCopy, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import CoachPaymentModal from '../../components/client/CoachPaymentModal.jsx';
+import useStore from '../../store/useStore';
 
-const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trainersData = [] }) => {
+const TrainerProfile = () => {
+    // Подключаем стор и привязываем данные к вашим старым именам переменных
+    const {
+        coachContract,
+        setCoachContract,
+        setSubscription, // Достаем метод из вашего стора
+        selectedTrainer: trainer,
+        trainers: trainersData
+    } = useStore();
+
     const [isCopied, setIsCopied] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
 
-    if (!trainer || !coachContract) return null;
+    const navigate = useNavigate();
+
+    // Защита от отсутствия данных
+    if (!trainer || !coachContract) {
+        return (
+            <Background>
+                <div className="flex flex-col items-center justify-center h-screen bg-black/20 text-[#c1cf98]">
+                    <p className="mb-4 text-xl">No trainer selected</p>
+                    <button
+                        onClick={() => navigate('/trainers')}
+                        className="px-6 py-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
+                    >
+                        Back to Coaches
+                    </button>
+                </div>
+            </Background>
+        );
+    }
 
     const isThisTrainer = coachContract.trainerId === trainer.id;
     const hasAnotherTrainer = coachContract.trainerId !== null && !isThisTrainer;
 
-    // Находим имя уже выбранного тренера для тултипа
-    const selectedTrainerInfo = trainersData.find(t => t.id.toString() === coachContract.trainerId?.toString());
+    const selectedTrainerInfo = trainersData?.find(t => t.id.toString() === coachContract.trainerId?.toString());
     const selectedName = selectedTrainerInfo ? `${selectedTrainerInfo.name} ${selectedTrainerInfo.surname}` : "another coach";
 
     const copyToClipboard = (text) => {
@@ -23,31 +50,49 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
         setTimeout(() => setIsCopied(false), 2000);
     };
 
+    // Логика выбора тренера
     const handleSelect = () => {
         if (hasAnotherTrainer) {
             setShowTooltip(true);
             setTimeout(() => setShowTooltip(false), 4000);
             return;
         }
+
         setCoachContract({ trainerId: trainer.id, status: 'pending' });
+
         setTimeout(() => {
-            setCoachContract(prev => ({ ...prev, status: 'to_pay' }));
+            setCoachContract({ trainerId: trainer.id, status: 'to_pay' });
         }, 3000);
     };
 
     const handleCancelRequest = () => {
+        // Если контракт активен, спрашиваем подтверждение
         if (coachContract.status === 'active') {
-            if (!window.confirm("Are you sure you want to stop mentorship?")) return;
+            const confirmed = window.confirm("Are you sure you want to stop mentorship? This will also cancel your training plan subscription.");
+            if (!confirmed) return;
         }
-        setCoachContract({ trainerId: null, status: 'none' });
+
+        // 1. Сбрасываем контракт тренера согласно структуре вашего стора
+        setCoachContract({
+            trainerId: null,
+            status: 'none'
+        });
+
+        // 2. Сбрасываем подписку, чтобы в профиле закрылся доступ к "My Plan"
+        setSubscription({
+            subId: null,
+            status: 'none'
+        });
+
+        // Опционально: можно сразу увести пользователя в профиль
+        // navigate('/home');
     };
 
     const handlePaymentSuccess = () => {
-        setCoachContract(prev => ({ ...prev, status: 'active' }));
+        setCoachContract({ ...coachContract, status: 'active' });
         setShowPaymentModal(false);
     };
 
-    // ТВОЙ ЭТАЛОННЫЙ СТИЛЬ (как у кнопки телефона)
     const actionBtnStyle = "group relative flex items-center justify-center gap-4 bg-white/5 hover:bg-white/10 px-10 py-5 rounded-full transition-all border border-white/5 shadow-inner w-full max-w-[340px] active:scale-95";
 
     return (
@@ -65,7 +110,7 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                 {/* НАВИГАЦИЯ */}
                 <nav className="absolute top-0 left-0 w-full z-50 px-6 md:px-12 py-10 md:py-24 pointer-events-none">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate(-1)}
                         className="pointer-events-auto text-2xl md:text-3xl p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 active:scale-95"
                     >
                         <FiArrowLeft className="text-[#c1cf98]"/>
@@ -95,10 +140,7 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                             </h2>
                         </header>
 
-                        {/* СЕКЦИЯ ДЕЙСТВИЙ */}
                         <div className="flex flex-col items-center gap-4 mb-8 md:mb-16 w-full">
-
-                            {/* Выбор тренера / Тултип */}
                             <div className="relative w-full flex justify-center">
                                 {showTooltip && (
                                     <span className="absolute bottom-full mb-3 bg-red-400/60 backdrop-blur-md text-white text-[10px] font-bold px-4 py-2 rounded-xl animate-bounce shadow-xl whitespace-nowrap z-50 border border-white/10">
@@ -119,7 +161,6 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                                 )}
                             </div>
 
-                            {/* Состояние: REVIEWING */}
                             {isThisTrainer && coachContract.status === 'pending' && (
                                 <div className="w-full flex flex-col items-center gap-4">
                                     <div className="w-full max-w-[340px] py-5 bg-white/5 border border-yellow-500/30 text-yellow-500/80 rounded-full animate-pulse font-bold uppercase tracking-widest text-center">
@@ -131,7 +172,6 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                                 </div>
                             )}
 
-                            {/* Состояние: ОПЛАТА */}
                             {isThisTrainer && coachContract.status === 'to_pay' && (
                                 <div className="w-full flex flex-col items-center gap-4">
                                     <button
@@ -146,14 +186,11 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                                 </div>
                             )}
 
-                            {/* Состояние: АКТИВНЫЙ */}
                             {isThisTrainer && coachContract.status === 'active' && (
                                 <div className="w-full flex flex-col items-center gap-4">
-                                    <div
-                                        className="w-full max-w-[340px] py-5 bg-[#c1cf98]/10 border border-[#c1cf98]/30 text-[#c1cf98] rounded-full font-black text-xl flex items-center justify-center gap-3">
+                                    <div className="w-full max-w-[340px] py-5 bg-[#c1cf98]/10 border border-[#c1cf98]/30 text-[#c1cf98] rounded-full font-black text-xl flex items-center justify-center gap-3">
                                         <FiCheckCircle size={24}/> MY COACH
                                     </div>
-
                                     <button onClick={handleCancelRequest} className={actionBtnStyle}>
                                         <span className="text-lg text-red-400/60 uppercase tracking-widest">Terminate Mentorship</span>
                                     </button>
@@ -161,9 +198,8 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                             )}
                         </div>
 
-                        {/* КНОПКА ТЕЛЕФОНА (Эталон стиля) */}
                         <button onClick={() => copyToClipboard(trainer.phone)} className={actionBtnStyle}>
-                        <span className="text-lg md:text-xl font-medium tracking-widest">{trainer.phone}</span>
+                            <span className="text-lg md:text-xl font-medium tracking-widest">{trainer.phone}</span>
                             <div className="relative flex items-center justify-center">
                                 {isCopied && (
                                     <span className="absolute bottom-full mb-3 bg-[#c1cf98] text-black text-[10px] font-bold px-3 py-1.5 rounded-lg animate-bounce shadow-xl whitespace-nowrap">
@@ -178,7 +214,6 @@ const TrainerProfile = ({ trainer, onBack, coachContract, setCoachContract, trai
                     </div>
                 </div>
 
-                {/* ОТЗЫВЫ */}
                 <div className="w-full pb-16 pt-2 md:pt-10">
                     <div className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory gap-4 px-6 md:px-12 scroll-px-6 md:scroll-px-12">
                         {trainer.reviews?.map((review, index) => (

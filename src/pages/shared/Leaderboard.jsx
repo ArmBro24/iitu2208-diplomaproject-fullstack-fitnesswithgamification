@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Импорт навигации
 import { FiArrowLeft } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 
@@ -30,7 +31,9 @@ const leaderboardData = [
     { id: 10, name: "Hero", points: 300 },
 ];
 
-const Leaderboard = ({ onBack }) => {
+const Leaderboard = () => {
+    const navigate = useNavigate(); // 2. Инициализация хука
+
     return (
         <Background>
             <div className="relative h-screen text-white font-rubik flex flex-col overflow-y-auto md:overflow-hidden">
@@ -38,7 +41,7 @@ const Leaderboard = ({ onBack }) => {
                 {/* HEADER */}
                 <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center shrink-0">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate('/menu')} // 3. Переход в меню
                         className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all hover:scale-105 active:scale-95"
                     >
                         <FiArrowLeft className="text-[#c1cf98]"/>
@@ -49,13 +52,11 @@ const Leaderboard = ({ onBack }) => {
                     </h1>
                 </nav>
 
-                {/* MAIN CONTENT AREA: Выровнены боковые px (px-6 md:px-16) для симметрии */}
+                {/* MAIN CONTENT AREA */}
                 <div className="relative z-10 flex-grow grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-8 px-6 md:px-16 pb-6 min-h-0 md:overflow-hidden">
 
-                    {/* LEFT COLUMN */}
+                    {/* LEFT COLUMN: Podium */}
                     <div className="flex flex-col justify-start md:justify-center h-full py-4 space-y-6 md:space-y-8 md:overflow-y-auto no-scrollbar">
-
-                        {/* PODIUM: Увеличена ширина столбиков (w-20/28/32) и шрифт Hero */}
                         <div className="flex items-end justify-between px-2 md:px-0 gap-x-4 pt-2 my-4 md:mt-4 shrink-0">
                             {/* 3rd Place */}
                             <div className="flex flex-col items-center min-w-0">
@@ -79,12 +80,12 @@ const Leaderboard = ({ onBack }) => {
 
                         <div className="hidden md:block shrink-0">
                             <p className="text-[#c1cf98] text-base lg:text-xl leading-relaxed font-medium">
-                                No matter where you are in the world, your dedication inspires us every day. Push your limits, participate in epic challenges, and stay active during your sessions to crush records and redefine what’s possible. Your journey to greatness starts with a single rep — make every point count!
+                                No matter where you are in the world, your dedication inspires us every day. Push your limits, participate in epic challenges, and stay active during your sessions to crush records and redefine what’s possible.
                             </p>
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Удалены лишние pr (padding-right) для симметрии с левым краем */}
+                    {/* RIGHT COLUMN: List */}
                     <div className="flex flex-col h-full overflow-y-visible md:overflow-hidden">
                         <div className="flex flex-col h-full md:overflow-y-auto md:pr-4 lg:pr-6 custom-scrollbar">
 
@@ -94,10 +95,6 @@ const Leaderboard = ({ onBack }) => {
                                 <span className="flex-grow text-center text-lg lg:text-2xl font-bold px-2 truncate">You</span>
                                 <span className="text-3xl lg:text-4xl font-black text-yellow-100/80 shrink-0">256</span>
                             </div>
-
-                            <p className="text-white/70 text-sm lg:text-base mb-6 px-2 leading-snug shrink-0">
-                                Push your limits and climb the ranks! Every workout brings you closer to the top. Stay consistent, cheer for others, and show what you're made of!
-                            </p>
 
                             {/* LIST */}
                             <div className="space-y-6 lg:space-y-8 pb-10">
@@ -118,35 +115,13 @@ const Leaderboard = ({ onBack }) => {
             </div>
 
             <style>{`
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .no-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                @media (min-width: 1024px) {
-                    .custom-scrollbar::-webkit-scrollbar { width: 12px; }
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 20px;
-                    margin: 10px 0;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(193, 207, 152, 0.3);
-                    border-radius: 20px;
-                    border: 2px solid transparent;
-                    background-clip: content-box;
-                }
-                .custom-scrollbar {
-                    scrollbar-width: thin;
-                    scrollbar-color: rgba(193, 207, 152, 0.3) rgba(255, 255, 255, 0.05);
-                }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+                @media (min-width: 1024px) { .custom-scrollbar::-webkit-scrollbar { width: 12px; } }
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 20px; margin: 10px 0; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(193, 207, 152, 0.3); border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+                .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(193, 207, 152, 0.3) rgba(255, 255, 255, 0.05); }
             `}</style>
         </Background>
     );

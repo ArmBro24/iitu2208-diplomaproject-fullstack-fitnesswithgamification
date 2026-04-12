@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoadingScreen from './components/common/LoadingScreen.jsx';
 import Register from './pages/shared/Register.jsx';
 import Login from './pages/shared/Login.jsx';
@@ -9,134 +10,56 @@ import Events from './pages/shared/Events.jsx';
 import Support from './pages/shared/Support.jsx';
 import ClientTraining from './pages/client/ClientTraining.jsx';
 import Trainers from './pages/client/Trainers.jsx';
-import Subscribtion from './pages/client/Subscribtion.jsx';
+import Subscription from './pages/client/Subscription.jsx';
+import SubscriptionDesc from './pages/client/SubscriptionDesc.jsx';
 import TrainerProfile from './pages/client/TrainerProfile.jsx';
 import ClientProfile from './pages/client/ClientProfile.jsx';
-import { trainersData } from './pages/client/Trainers.jsx';
+import Challenge from './pages/client/Challenge.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState('register');
-    const [selectedTrainer, setSelectedTrainer] = useState(null);
-    const [selectedTraining, setSelectedTraining] = useState(null);
-    const [coachContract, setCoachContract] = useState({
-        trainerId: null,
-        status: 'none'
-    });
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 3000);
+        const timer = setTimeout(() => setIsLoading(false), 2000); // Немного ускорил для комфорта
         return () => clearTimeout(timer);
     }, []);
 
-    const handleLogin = (email) => {
-        if (email === 'client@gmail.com') {
-            setCurrentPage('clientHome');
-        } else {
-            setCurrentPage('login');
-        }
-    };
-
-    if (isLoading) {
-        return <LoadingScreen />;
-    }
+    if (isLoading) return <LoadingScreen />;
 
     return (
-        <>
-            {currentPage === 'register' && (
-                <Register onNavigate={() => setCurrentPage('login')} />
-            )}
+        <Routes>
+            {/* Публичные роуты */}
+            <Route path="/" element={<Navigate to="/register" />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login onLogin={(email) => console.log(email)} />} />
 
-            {currentPage === 'login' && (
-                <Login
-                    onNavigate={() => setCurrentPage('register')}
-                    onLogin={handleLogin}
-                />
-            )}
+            {/* Главные разделы клиента */}
+            <Route path="/home" element={<ClientHome onLogout={() => navigate('/login')} />} />
+            <Route path="/menu" element={<Menu />} />
 
-            {currentPage === 'clientHome' && (
-                <ClientHome
-                    onLogout={() => setCurrentPage('login')}
-                    onOpenMenu={() => setCurrentPage('menu')}
-                    onOpenTrainers={() => setCurrentPage('trainers')}
-                    onOpenSubscribtion={() => setCurrentPage('subscribtion')}
-                    setCurrentPage={setCurrentPage}
-                    onSelectTraining={(trainingData) => {
-                        setSelectedTraining(trainingData);
-                        setCurrentPage('training');
-                    }}
-                />
-            )}
+            {/* Подписки (теперь без передачи пропсов subsData) */}
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/subscription-desc" element={<SubscriptionDesc />} />
 
-            {currentPage === 'subscribtion' && (
-                <Subscribtion onBack={() => setCurrentPage('clientHome')} />
-            )}
+            {/* Тренеры и тренировки (всё состояние теперь внутри стора) */}
+            <Route path="/trainers" element={<Trainers />} />
+            <Route path="/trainer-profile" element={<TrainerProfile />} />
+            <Route path="/training" element={<ClientTraining />} />
 
-            {currentPage === 'menu' && (
-                <Menu
-                    onBack={() => setCurrentPage('clientHome')}
-                    onLogout={() => setCurrentPage('login')}
-                    onOpenLeaderboard={() => setCurrentPage('leaderboard')}
-                    onOpenEvents={() => setCurrentPage('events')}
-                    onOpenSupport={() => setCurrentPage('support')}
-                />
-            )}
+            {/* Профиль клиента (чистый роут) */}
+            <Route path="/profile" element={<ClientProfile />} />
 
-            {currentPage === 'leaderboard' && (
-                <Leaderboard onBack={() => setCurrentPage('menu')} />
-            )}
+            {/* Дополнительные страницы */}
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/support" element={<Support />} />
 
-            {currentPage === 'events' && (
-                <Events onBack={() => setCurrentPage('menu')} />
-            )}
+            {/* Редирект для несуществующих страниц */}
+            <Route path="*" element={<Navigate to="/login" />} />
 
-            {currentPage === 'support' && (
-                <Support onBack={() => setCurrentPage('menu')} />
-            )}
-
-            {currentPage === 'training' && (
-                <ClientTraining
-                    trainingData={selectedTraining}
-                    onBack={() => setCurrentPage('clientHome')}
-                />
-            )}
-
-            {currentPage === 'trainers' && (
-                <Trainers
-                    onBack={() => setCurrentPage('clientHome')}
-                    coachContract={coachContract}
-                    onSelectTrainer={(trainer) => {
-                        setSelectedTrainer(trainer);
-                        setCurrentPage('trainerProfile');
-                    }}
-                />
-            )}
-
-            {currentPage === 'trainerProfile' && (
-                <TrainerProfile
-                    trainer={selectedTrainer}
-                    onBack={() => setCurrentPage('trainers')}
-                    coachContract={coachContract}
-                    setCoachContract={setCoachContract}
-                    trainersData={trainersData}
-                />
-            )}
-
-            {currentPage === 'profile' && (
-                <ClientProfile
-                    onBack={() => setCurrentPage('home')}
-                    coachContract={coachContract}
-                    trainersData={trainersData}
-                    onNavigateToTrainers={() => setCurrentPage('trainers')}
-                    onNavigateToCoachProfile={(trainer) => {
-                        setSelectedTrainer(trainer);
-                        setCurrentPage('trainerProfile');
-                    }}
-                />
-            )}
-        </>
+            <Route path="/challenges" element={<Challenge />} />
+        </Routes>
     );
 }
 

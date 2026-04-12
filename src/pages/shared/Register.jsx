@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PatternFormat } from 'react-number-format';
+import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт
 import {
     FiUser,
     FiMail,
@@ -11,8 +12,17 @@ import {
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 
-const Register = ({ onNavigate }) => {
+const Register = () => { // 2. Убран onNavigate из пропсов
     const [gender, setGender] = useState('male');
+
+    // 3. Инициализация навигатора
+    const navigate = useNavigate();
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Здесь логика регистрации
+        navigate('/login'); // Переход после сабмита
+    };
 
     return (
         <Background>
@@ -29,7 +39,7 @@ const Register = ({ onNavigate }) => {
                         <span className="text-gray-400 text-xl">Register</span>
                     </div>
 
-                    <form className="w-full space-y-4" onSubmit={(e) => e.preventDefault()}>
+                    <form className="w-full space-y-4" onSubmit={handleSubmit}>
                         {/* Имя и Фамилия */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
@@ -79,7 +89,7 @@ const Register = ({ onNavigate }) => {
                             </div>
                             <div className="relative">
                                 <select className="auth-input appearance-none cursor-pointer text-sm pl-3 pr-8">
-                                    <option value="" disabled selected>select role</option>
+                                    <option value="" disabled defaultValue>select role</option>
                                     <option value="client">Client</option>
                                     <option value="trainer">Trainer</option>
                                     <option value="admin">Admin</option>
@@ -128,7 +138,7 @@ const Register = ({ onNavigate }) => {
                                 Have an account?
                                 <button
                                     type="button"
-                                    onClick={onNavigate}
+                                    onClick={() => navigate('/login')} // Переход на логин
                                     className="text-white hover:underline bg-transparent border-none p-0 ml-1 cursor-pointer font-medium"
                                 >
                                     Log in
@@ -145,7 +155,6 @@ const Register = ({ onNavigate }) => {
                 </div>
             </div>
 
-            {/* Стили инпутов */}
             <style jsx>{`
                 .auth-input {
                     width: 100%;

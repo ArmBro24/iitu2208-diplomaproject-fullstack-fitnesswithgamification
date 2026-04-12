@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт
 import {
     FiArrowLeft,
     FiUser,
@@ -10,34 +11,35 @@ import {
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 
-// Добавляем onOpenLeaderboard в пропсы
-const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents, onOpenSupport}) => {
+const Menu = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const navigate = useNavigate(); // 2. Инициализация навигации
 
     const menuItems = [
         {
             name: 'Leaderboard',
             icon: <FiBarChart2 size={22} />,
-            action: onOpenLeaderboard // Привязываем действие
+            path: '/leaderboard' // 3. Пути вместо функций
         },
         {
             name: 'Events',
             icon: <FiGlobe size={22}/>,
-            action: onOpenEvents
+            path: '/events'
         },
         {
             name: 'Support',
             icon: <FiHelpCircle size={22} />,
-            action: onOpenSupport
+            path: '/support'
         },
     ];
 
     return (
         <Background>
             <div className="min-h-screen flex flex-col">
+                {/* NAVIGATION */}
                 <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate('/home')} // 4. На главную
                         className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all"
                     >
                         <FiArrowLeft className="text-[#c1cf98]" />
@@ -51,11 +53,12 @@ const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents, onOpenSupport
                     </button>
                 </nav>
 
+                {/* MENU ITEMS */}
                 <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 gap-6 pb-24">
                     {menuItems.map((item) => (
                         <button
                             key={item.name}
-                            onClick={item.action} // Вешаем обработчик клика
+                            onClick={() => navigate(item.path)} // 5. Переход по пути
                             className="relative w-full max-w-[340px] py-5 px-6
                                        bg-white/5 backdrop-blur-sm
                                        border-2 border-transparent
@@ -70,7 +73,7 @@ const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents, onOpenSupport
                     ))}
                 </div>
 
-                {/* MODAL OVERLAY оставляем без изменений */}
+                {/* MODAL OVERLAY */}
                 {isProfileOpen && (
                     <div
                         className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 transition-all"
@@ -90,12 +93,17 @@ const Menu = ({ onBack, onLogout, onOpenLeaderboard, onOpenEvents, onOpenSupport
                             <div className="flex flex-col items-center gap-4">
                                 <h2 className="text-2xl font-black tracking-tight mb-4 text-white">Client Name</h2>
                                 <div className="w-full flex flex-col gap-3">
-                                    <button className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] rounded-2xl flex items-center justify-center transition-all font-medium text-white group">
+                                    <button
+                                        onClick={() => navigate('/profile')} // 6. В профиль
+                                        className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] rounded-2xl flex items-center justify-center transition-all font-medium text-white group"
+                                    >
                                         <FiUser className="absolute left-6 text-[#c1cf98]" size={20} />
                                         <span>Profile</span>
                                     </button>
-                                    <button onClick={onLogout}
-                                            className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-red-400/40 active:border-red-400/40 rounded-2xl flex items-center justify-center transition-all font-medium text-white group">
+                                    <button
+                                        onClick={() => navigate('/login')} // 7. На логин (выход)
+                                        className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-red-400/40 active:border-red-400/40 rounded-2xl flex items-center justify-center transition-all font-medium text-white group"
+                                    >
                                         <FiLogOut className="absolute left-6 text-red-400/60 transition-colors" size={20} />
                                         <span className="text-white">Exit</span>
                                     </button>

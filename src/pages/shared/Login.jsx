@@ -3,11 +3,12 @@ import { FiMail, FiLock } from 'react-icons/fi';
 
 import bgMobile from '../../assets/login_back_mob.jpg';
 import bgDesktop from '../../assets/login_back_desk.jpg';
+import { useNavigate } from 'react-router-dom';
 
-const Login = ({ onNavigate, onLogin }) => {
+const Login = ({ onLogin }) => {
     const [isLoaded, setIsLoaded] = useState(false);
-    // Добавляем состояние для email
     const [email, setEmail] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         const animation = requestAnimationFrame(() => {
@@ -16,11 +17,15 @@ const Login = ({ onNavigate, onLogin }) => {
         return () => cancelAnimationFrame(animation);
     }, []);
 
-    // Обработчик отправки формы
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Передаем введенный email в App.jsx
-        onLogin(email);
+
+        if (email === 'client@gmail.com') {
+            onLogin(email);
+            navigate('/home');
+        } else {
+            alert('Wrong email!');
+        }
     };
 
     return (
@@ -97,7 +102,7 @@ const Login = ({ onNavigate, onLogin }) => {
                                     Don't have an account?
                                     <button
                                         type="button"
-                                        onClick={onNavigate}
+                                        onClick={() => navigate('/register')}
                                         className="text-white hover:underline ml-1 bg-transparent border-none p-0 cursor-pointer font-medium"
                                     >
                                         Sign up

@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт
 import { FiMenu, FiUser, FiX, FiLogOut } from 'react-icons/fi';
 import Calendar from '../../components/client/Calendar.jsx';
-// Импортируем твой новый общий фон
 import Background from '../../components/common/Background.jsx';
 import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
+import useStore from '../../store/useStore';
 
-const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, onOpenSubscribtion, setCurrentPage }) => {
+const ClientHome = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const navigate = useNavigate();
+
+    const setSelectedTraining = useStore((state) => state.setSelectedTraining);
 
     return (
         <Background>
-            {/* Контейнер с текстом и сеткой.
-                ВНИМАНИЕ: Обертка div здесь нужна, чтобы сохранить flex-col и шрифт rubik */}
             <div className="relative min-h-screen text-white font-rubik flex flex-col overflow-x-hidden">
 
                 {/* MODAL OVERLAY */}
@@ -40,7 +42,7 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                                     <button
                                         onClick={() => {
                                             setIsProfileOpen(false);
-                                            setCurrentPage('profile');
+                                            navigate('/profile'); // 4. Переход в профиль
                                         }}
                                         className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-[#c1cf98]/60 active:border-[#c1cf98] rounded-2xl flex items-center justify-center transition-all font-medium text-white group"
                                     >
@@ -48,10 +50,11 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                                         <span className="text-white">Profile</span>
                                     </button>
 
-                                    <button onClick={onLogout}
-                                            className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-red-400/40 active:border-red-400/40 rounded-2xl flex items-center justify-center transition-all font-medium text-white group">
-                                        <FiLogOut className="absolute left-6 text-red-400/60 transition-colors"
-                                                  size={20}/>
+                                    <button
+                                        onClick={() => navigate('/login')} // 5. Выход на логин
+                                        className="relative w-full py-4 px-6 bg-white/5 border-2 border-transparent hover:border-red-400/40 active:border-red-400/40 rounded-2xl flex items-center justify-center transition-all font-medium text-white group"
+                                    >
+                                        <FiLogOut className="absolute left-6 text-red-400/60 transition-colors" size={20}/>
                                         <span className="text-white">Exit</span>
                                     </button>
                                 </div>
@@ -74,7 +77,7 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                     {/* HEADER */}
                     <nav className="[grid-area:header] px-6 md:px-10 py-6 md:py-8 flex items-center justify-between">
                         <button
-                            onClick={onOpenMenu}
+                            onClick={() => navigate('/menu')} // 6. Переход в меню
                             className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all"
                         >
                             <FiMenu className="text-[#c1cf98]"/>
@@ -107,8 +110,8 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                     {/* COACHES BLOCK */}
                     <div className="[grid-area:coaches] flex items-stretch md:items-end md:pr-6">
                         <div
-                            onClick={onOpenTrainers}
-                            className="w-full h-full md:h-[95%] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300">
+                            onClick={() => navigate('/trainers')} // 7. Переход к тренерам
+                            className="w-full h-full md:h-[95%] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-none overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300 cursor-pointer">
                             <img src={coachesImg} alt="Coaches" className="w-full h-full object-cover"/>
                         </div>
                     </div>
@@ -124,14 +127,12 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
 
                         <div className="md:[grid-area:plans] flex items-stretch md:pl-10 md:pb-10">
                             <div
-                                onClick={onOpenSubscribtion}
+                                onClick={() => navigate('/subscription')} // 8. Переход к подпискам
                                 className="w-full h-40 md:h-full rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent cursor-pointer hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300 group"
                             >
                                 <img src={plansImg} alt="Plans"
                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
-                                {/* Можно добавить легкий оверлей с текстом поверх картинки, чтобы было понятно, что это кликабельно */}
-                                <div
-                                    className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                 </div>
                             </div>
                         </div>
@@ -147,7 +148,13 @@ const ClientHome = ({ onLogout, onOpenMenu, onSelectTraining, onOpenTrainers, on
                     {/* CALENDAR */}
                     <div className="[grid-area:calendar] flex items-end mt-4">
                         <div className="w-[85%] md:w-full">
-                            <Calendar isEdge={true} onDateClick={onSelectTraining}/>
+                            <Calendar
+                                isEdge={true}
+                                onDateClick={(trainingData) => {
+                                    setSelectedTraining(trainingData);
+                                    navigate('/training');
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
