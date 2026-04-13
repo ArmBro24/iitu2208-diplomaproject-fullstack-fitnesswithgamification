@@ -87,54 +87,54 @@ const useStore = create((set) => ({
     },
 
     challenges: [
-        {
-            id: 1,
-            title: "No Skip",
-            points: 55, // Храним числом для расчетов
-            desc: "don't skip a single workout during your entire membership.",
-            status: "available",
-            color: "bg-red-900/40"
-        },
-        {
-            id: 2,
-            title: "Early Bird",
-            points: 30,
-            desc: "come to morning workouts before 10:00 a.m. and establish a sleep routine.",
-            status: "active",
-            color: "bg-yellow-800/40"
-        },
-        {
-            id: 3,
-            title: "Cardio",
-            points: 35,
-            desc: "do at least 20 minutes of cardio every visit and increase your endurance.",
-            status: "available",
-            color: "bg-green-900/40"
-        }
+        { id: 1, title: "No Skip", points: 100, desc: "Don't skip a single workout this month.", status: "available", color: "bg-red-900/40", endDate: "2024-06-01", result: null },
+        { id: 2, title: "Early Bird", points: 50, desc: "Train before 10:00 AM for 7 days straight.", status: "active", color: "bg-yellow-800/40", endDate: "2024-05-15", result: null },
+        { id: 3, title: "Iron Core", points: 75, desc: "Perform 100 planks in 10 days.", status: "available", color: "bg-blue-900/40", endDate: "2024-05-20", result: null },
+        { id: 4, title: "Cardio King", points: 120, desc: "Run 50km total this month.", status: "completed", color: "bg-green-900/40", endDate: "2024-04-30", result: "success" },
+        { id: 5, title: "Water Balance", points: 30, desc: "Drink 2L water daily.", status: "available", color: "bg-cyan-900/40", endDate: "2024-06-10", result: null }
     ],
 
-    // Actions для челленджей
     acceptChallenge: (id) => set((state) => ({
         challenges: state.challenges.map(ch =>
-            ch.id === id ? { ...ch, status: 'active' } : ch
+            ch.id === id ? { ...ch, status: 'active', startDate: new Date().toLocaleDateString() } : ch
         )
     })),
 
+    // Успешное завершение
     completeChallenge: (id) => set((state) => {
         const challenge = state.challenges.find(ch => ch.id === id);
-        if (challenge) {
-            // При завершении можно сразу добавлять очки пользователю
-            // Например, в категорию 'consistency' или 'motivation'
-            // state.addPoints(challenge.points, 'motivation');
+        if (!challenge) return state;
 
-            return {
-                challenges: state.challenges.map(ch =>
-                    ch.id === id ? { ...ch, status: 'completed' } : ch
-                )
-            };
-        }
-        return state;
+        // Начисляем баллы
+        const newTotalPoints = state.userStats.points + challenge.points;
+        return {
+            userStats: { ...state.userStats, points: newTotalPoints },
+            challenges: state.challenges.map(ch =>
+                ch.id === id ? { ...ch, status: 'completed', result: 'success' } : ch
+            )
+        };
     }),
+
+    // Провал (кнопка "сдаться" или симуляция провала)
+    failChallenge: (id) => set((state) => {
+        const challenge = state.challenges.find(ch => ch.id === id);
+        if (!challenge) return state;
+
+        const penalty = Math.floor(challenge.points * 0.2); // 20% штраф
+        return {
+            userStats: { ...state.userStats, points: state.userStats.points - penalty },
+            challenges: state.challenges.map(ch =>
+                ch.id === id ? { ...ch, status: 'completed', result: 'fail' } : ch
+            )
+        };
+    }),
+
+    // Попробовать снова
+    retryChallenge: (id) => set((state) => ({
+        challenges: state.challenges.map(ch =>
+            ch.id === id ? { ...ch, status: 'active', result: null } : ch
+        )
+    })),
 
     // Состояние выбора (для навигации)
     selectedTrainer: null,

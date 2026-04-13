@@ -1,26 +1,45 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiCircle, FiCheckCircle } from 'react-icons/fi';
-import Background from '../../components/common/Background.jsx';
-import challengeBg from '../../assets/challenge.png';
+import { FiArrowLeft, FiX, FiInfo, FiAlertTriangle, FiCheckCircle, FiRotateCcw } from 'react-icons/fi';
+import challengeBg from '../../assets/challenge.png'; // Возвращаем ваш фон
 import useStore from '../../store/useStore';
 
 const Challenges = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('available');
+    const [selectedChallenge, setSelectedChallenge] = useState(null);
+    const [modalType, setModalType] = useState(null); // 'accept', 'giveup', 'details', 'retry'
 
-    // Достаем данные из стора
-    const challenges = useStore((state) => state.challenges);
-
-    // Фильтруем их по табу
+    const { challenges, acceptChallenge, failChallenge, completeChallenge, retryChallenge } = useStore();
     const filteredChallenges = challenges.filter(ch => ch.status === activeTab);
+
+    const getStatusColor = (status) => {
+        if (status === 'completed') return 'text-[#c3d68b]';
+        if (status === 'active') return 'text-[#fef08a]';
+        return 'text-white/60';
+    };
+
+    const handleAction = (id) => {
+        if (modalType === 'accept') {
+            acceptChallenge(id);
+            setActiveTab('active');
+        } else if (modalType === 'giveup') {
+            failChallenge(id);
+            setActiveTab('completed');
+        } else if (modalType === 'retry') {
+            retryChallenge(id);
+            setActiveTab('active');
+        }
+        setSelectedChallenge(null);
+        setModalType(null);
+    };
 
     return (
         <div
             className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat fixed inset-0 overflow-hidden"
             style={{ backgroundImage: `url(${challengeBg})` }}
         >
-            {/* Overlay с блюром как в тренировках */}
+            {/* Оригинальный Overlay с блюром */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-0" />
 
             <div className="relative z-10 flex flex-col h-full overflow-y-auto no-scrollbar">
@@ -35,13 +54,14 @@ const Challenges = () => {
                     </button>
 
                     <div className="flex-grow flex items-center justify-center gap-3 pr-12">
-                        <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter text-white uppercase">
-                            HeroFit <span className="font-light not-italic ml-2 opacity-80 uppercase tracking-normal text-xl md:text-2xl">Challenges</span>
-                        </h1>
+                        <span className={`text-lg md:text-xl font-medium lowercase ${getStatusColor(activeTab)}`}>
+                            {activeTab}
+                        </span>
+                        <h1 className="text-xl md:text-3xl font-medium text-white">Challenges</h1>
                     </div>
                 </nav>
 
-                {/* TABS (available / active / completed) */}
+                {/* TABS */}
                 <div className="flex justify-center px-6 mb-8">
                     <div className="flex bg-black/30 backdrop-blur-xl p-1.5 rounded-full border border-white/10 w-full max-w-md">
                         {['available', 'active', 'completed'].map((tab) => (
@@ -60,7 +80,7 @@ const Challenges = () => {
                     </div>
                 </div>
 
-                {/* CHALLENGES LIST / CAROUSEL */}
+                {/* CHALLENGES LIST (Старый стиль расположения карточек) */}
                 <div className="flex-grow flex items-start justify-center p-6 md:p-12">
                     <div className="flex flex-col md:flex-row items-center md:items-stretch justify-center gap-6 w-full max-w-7xl overflow-visible">
                         {filteredChallenges.length > 0 ? (
@@ -69,7 +89,7 @@ const Challenges = () => {
                                     key={challenge.id}
                                     className={`
                                         group relative w-full md:w-[320px] 
-                                        min-h-[160px] md:min-h-[400px]
+                                        min-h-[160px] md:min-h-[420px]
                                         rounded-[30px] md:rounded-[45px]
                                         p-6 md:p-8 flex flex-col justify-between
                                         border-2 border-white/10 backdrop-blur-2xl
@@ -88,22 +108,53 @@ const Challenges = () => {
                                                 {challenge.points}
                                             </span>
                                         </div>
-
-                                        {/* Status Icon */}
                                         <div className="text-[#c1cf98]">
-                                            {activeTab === 'completed' ? (
-                                                <FiCheckCircle size={32} />
-                                            ) : (
-                                                <FiCircle size={32} strokeWidth={3} className="opacity-40" />
-                                            )}
+                                            {challenge.result === 'success' && <FiCheckCircle size={32} />}
+                                            {challenge.result === 'fail' && <FiAlertTriangle size={32} className="text-red-500" />}
                                         </div>
                                     </div>
 
-                                    {/* Content Bottom (Description) */}
-                                    <div className="mt-4 md:mt-0">
-                                        <p className="text-sm md:text-base font-medium text-white/80 leading-relaxed md:max-w-[200px]">
+                                    {/* Description */}
+                                    <div className="mt-4">
+                                        <p className="text-sm md:text-base font-medium text-white/80 leading-relaxed">
                                             {challenge.desc}
                                         </p>
+                                    </div>
+
+                                    {/* Кнопки действий */}
+                                    <div className="mt-6 flex flex-col gap-2 relative z-20">
+                                        {activeTab === 'available' && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedChallenge(challenge); setModalType('accept'); }}
+                                                className="w-full py-3 bg-[#c1cf98] text-black text-xs font-black uppercase tracking-tighter rounded-2xl hover:bg-white transition-all"
+                                            >
+                                                Accept Challenge
+                                            </button>
+                                        )}
+                                        {activeTab === 'active' && (
+                                            <>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedChallenge(challenge); setModalType('giveup'); }}
+                                                    className="w-full py-3 bg-red-500/20 text-red-500 border border-red-500/30 text-xs font-black uppercase rounded-2xl hover:bg-red-500 hover:text-white transition-all"
+                                                >
+                                                    Give Up
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); completeChallenge(challenge.id); }}
+                                                    className="w-full py-2 bg-green-500/10 text-green-400 text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    [SIMULATE SUCCESS]
+                                                </button>
+                                            </>
+                                        )}
+                                        {activeTab === 'completed' && challenge.result === 'fail' && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedChallenge(challenge); setModalType('retry'); }}
+                                                className="w-full py-3 bg-white/10 text-white text-xs font-black uppercase rounded-2xl hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <FiRotateCcw size={14}/> Try Again
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* Decorative Element */}
@@ -111,13 +162,53 @@ const Challenges = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-20 opacity-40">
-                                <p className="text-xl italic">No challenges in this category yet...</p>
+                            <div className="text-center py-20 opacity-40 italic">
+                                <p className="text-xl">No challenges in this category yet...</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* MODAL (Ваш стиль) */}
+            {selectedChallenge && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedChallenge(null)} />
+                    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-300">
+                        <button onClick={() => setSelectedChallenge(null)} className="absolute top-4 right-4 text-white/20 hover:text-white">
+                            <FiX size={20} />
+                        </button>
+
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${modalType === 'giveup' ? 'bg-red-500/10' : 'bg-[#c1cf98]/10'}`}>
+                            {modalType === 'giveup' ? <FiAlertTriangle className="text-red-500" size={32} /> : <FiInfo className="text-[#c1cf98]" size={32} />}
+                        </div>
+
+                        <h3 className="text-xl font-bold mb-4">
+                            {modalType === 'accept' && "Accept Challenge?"}
+                            {modalType === 'giveup' && "Are you sure?"}
+                            {modalType === 'retry' && "Restart Challenge?"}
+                        </h3>
+
+                        <div className="bg-white/5 rounded-3xl p-4 mb-6 space-y-2 text-sm">
+                            <div className="flex justify-between"><span className="opacity-40">Ends:</span> <span>{selectedChallenge.endDate}</span></div>
+                            <div className="flex justify-between"><span className="opacity-40">Reward:</span> <span className="text-[#c1cf98] font-bold">{selectedChallenge.points} pts</span></div>
+                            <div className="flex justify-between"><span className="opacity-40">Penalty:</span> <span className="text-red-400">-{Math.floor(selectedChallenge.points * 0.2)} pts</span></div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => handleAction(selectedChallenge.id)}
+                                className={`w-full py-4 font-bold rounded-2xl transition-all shadow-lg ${modalType === 'giveup' ? 'bg-red-500 shadow-red-500/20' : 'bg-[#c1cf98] text-black shadow-[#c1cf98]/20'}`}
+                            >
+                                Confirm
+                            </button>
+                            <button onClick={() => setSelectedChallenge(null)} className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

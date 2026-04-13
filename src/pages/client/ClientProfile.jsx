@@ -12,7 +12,6 @@ import cupImg from '../../assets/cup.png';
 
 const ClientProfile = ({ onNavigateToCoachProfile }) => {
 
-    // 2. Достаем всё из стора. В сторе переменная называется 'trainers'
     const {
         userStats,
         coachContract,
