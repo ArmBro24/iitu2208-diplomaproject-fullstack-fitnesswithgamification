@@ -4,6 +4,7 @@ import { FiMail, FiLock } from 'react-icons/fi';
 import bgMobile from '../../assets/login_back_mob.jpg';
 import bgDesktop from '../../assets/login_back_desk.jpg';
 import { useNavigate } from 'react-router-dom';
+import { setActiveRole } from '../../utils/roleRouting.js';
 
 const Login = ({ onLogin }) => {
     const [isLoaded, setIsLoaded] = useState(false);
@@ -21,8 +22,17 @@ const Login = ({ onLogin }) => {
         e.preventDefault();
 
         if (email === 'client@gmail.com') {
+            setActiveRole('client');
             onLogin(email);
             navigate('/home');
+        } else if (email === 'trainer@gmail.com') {
+            setActiveRole('trainer');
+            onLogin(email);
+            navigate('/trainer/dashboard');
+        } else if (email === 'admin@gmail.com') {
+            setActiveRole('admin');
+            onLogin(email);
+            navigate('/admin/dashboard');
         } else {
             alert('Wrong email!');
         }

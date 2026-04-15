@@ -15,6 +15,8 @@ import SubscriptionDesc from './pages/client/SubscriptionDesc.jsx';
 import TrainerProfile from './pages/client/TrainerProfile.jsx';
 import ClientProfile from './pages/client/ClientProfile.jsx';
 import Challenge from './pages/client/Challenge.jsx';
+import TrainerDashboard from './pages/trainer/Trainers.jsx';
+import AdminPanel from './pages/admin/AdminPanel.jsx';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -41,11 +43,15 @@ function App() {
             {/* Подписки (теперь без передачи пропсов subsData) */}
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/subscription-desc" element={<SubscriptionDesc />} />
+            <Route path="/plans" element={<Subscription />} />
+            <Route path="/plans/details" element={<SubscriptionDesc />} />
 
             {/* Тренеры и тренировки (всё состояние теперь внутри стора) */}
             <Route path="/trainers" element={<Trainers />} />
             <Route path="/trainer-profile" element={<TrainerProfile />} />
             <Route path="/training" element={<ClientTraining />} />
+            <Route path="/trainer/dashboard" element={<TrainerDashboard onLogout={() => navigate('/login')} />} />
+            <Route path="/admin/dashboard" element={<AdminPanel onLogout={() => navigate('/login')} />} />
 
             {/* Профиль клиента (чистый роут) */}
             <Route path="/profile" element={<ClientProfile />} />

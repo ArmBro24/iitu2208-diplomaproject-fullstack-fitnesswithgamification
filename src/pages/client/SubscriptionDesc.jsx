@@ -4,10 +4,12 @@ import { FiArrowLeft, FiCheck } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import useStore from '../../store/useStore';
 import { subsData } from './Subscription';
+import { getRoleHomePath } from '../../utils/roleRouting.js';
 
 const SubscriptionDesc = () => {
     const { subscription } = useStore();
     const navigate = useNavigate();
+    const homePath = getRoleHomePath();
 
     const currentSub = subsData.find(s => s.id === subscription.subId);
 
@@ -22,7 +24,7 @@ const SubscriptionDesc = () => {
                 {/* Хедер: Кнопка + Заголовок */}
                 <div className="flex items-center w-full mb-8 z-10 shrink-0">
                     <button
-                        onClick={() => navigate('/profile')}
+                        onClick={() => navigate(homePath)}
                         className="p-3 bg-white/5 rounded-2xl border border-white/5 active:scale-90 transition-transform"
                     >
                         <FiArrowLeft size={24} className="text-[#c1cf98]"/>
@@ -79,7 +81,7 @@ const SubscriptionDesc = () => {
 
                         {/* Кнопка */}
                         <button
-                            onClick={() => navigate('/subscription')}
+                            onClick={() => navigate('/plans')}
                             className="w-full py-5 bg-[#c1cf98] text-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] transition-all shadow-lg shadow-[#c1cf98]/20 mt-4 md:mt-0"
                         >
                             Change Subscription

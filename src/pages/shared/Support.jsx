@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт навигации
+import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCopy } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import supportImg from '../../assets/support.png';
+import { getSharedBackPath } from '../../utils/roleRouting.js';
+
+const phoneNumbers = [
+    '+7 (777) 777 77 77',
+    '+7 (701) 111 24 24',
+    '+7 (747) 880 90 12',
+    '+7 (705) 555 15 15',
+];
 
 const Support = () => {
     const [copiedId, setCopiedId] = useState(null);
-    const navigate = useNavigate(); // 2. Инициализация хука
-
-    const phoneNumbers = [
-        "+7 (777) 777 77 77",
-        "+7 (777) 777 77 77",
-        "+7 (777) 777 77 77",
-        "+7 (777) 777 77 77"
-    ];
+    const navigate = useNavigate();
+    const backPath = getSharedBackPath();
 
     const copyToClipboard = (text, index) => {
         navigator.clipboard.writeText(text);
@@ -23,38 +25,29 @@ const Support = () => {
 
     return (
         <Background>
-            <div className="relative h-screen text-white font-rubik flex flex-col overflow-hidden">
-
-                {/* BACKGROUND IMAGE */}
+            <div className="relative h-screen overflow-hidden text-white">
                 <div className="absolute inset-0 z-0">
-                    <img
-                        src={supportImg}
-                        alt="Support Background"
-                        className="w-full h-full object-cover object-[70%_center]"
-                    />
+                    <img src={supportImg} alt="Support" className="h-full w-full object-cover object-[70%_center]" />
                     <div className="absolute inset-0 bg-black/45" />
                 </div>
 
-                {/* HEADER */}
-                <nav className="relative z-30 px-6 md:px-10 py-6 md:py-8 flex items-center shrink-0">
+                <nav className="relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8">
                     <button
-                        onClick={() => navigate('/menu')} // 3. Навигация в меню
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/15 hover:bg-white/25 rounded-xl md:rounded-2xl transition-all active:scale-95"
+                        onClick={() => navigate(backPath)}
+                        className="rounded-xl bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 md:rounded-2xl md:p-3 md:text-3xl"
                     >
-                        <FiArrowLeft className="text-yellow-100/80"/>
+                        <FiArrowLeft className="text-yellow-100/80" />
                     </button>
-                    <h1 className="flex-grow text-center text-yellow-100/80 text-2xl md:text-3xl font-medium tracking-tight pr-12">
+
+                    <h1 className="pr-12 text-center text-2xl font-medium tracking-tight text-yellow-100/80 md:text-3xl">
                         Support
                     </h1>
                 </nav>
 
-                {/* MAIN CONTENT AREA */}
-                <div className="relative z-10 flex-grow flex flex-col items-center justify-start pt-12 md:pt-0 px-6">
-                    <div className="relative w-full max-w-[380px] md:max-w-[500px] flex flex-col items-center py-14 md:py-20 md:-mt-8">
-
-                        {/* SVG BLOB DECORATION */}
-                        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative w-full h-full scale-x-[1.6] scale-y-[1.3] md:scale-x-[1.5] md:scale-y-[1.2]">
+                <div className="relative z-10 flex flex-grow flex-col items-center justify-start px-6 pt-12 md:pt-0">
+                    <div className="relative w-full max-w-[380px] py-14 md:-mt-8 md:max-w-[500px] md:py-20">
+                        <div className="absolute inset-0 z-0 flex items-center justify-center">
+                            <div className="h-full w-full scale-x-[1.6] scale-y-[1.3] md:scale-x-[1.5] md:scale-y-[1.2]">
                                 <div
                                     className="absolute inset-0"
                                     style={{
@@ -76,37 +69,32 @@ const Support = () => {
                             </svg>
                         </div>
 
-                        {/* CONTENT */}
-                        <div className="relative z-10 w-full flex flex-col items-center text-center">
-                            <h1 className="text-[#1a120d] text-3xl md:text-5xl font-black tracking-tight mb-1">
-                                HeroFit
-                            </h1>
-                            <p className="text-[#c1cf98] text-xl md:text-2xl mb-6 md:mb-10">
-                                is here for you!
-                            </p>
+                        <div className="relative z-10 flex w-full flex-col items-center text-center">
+                            <h1 className="mb-1 text-3xl font-black tracking-tight text-[#1a120d] md:text-5xl">HeroFit</h1>
+                            <p className="mb-6 text-xl text-[#c1cf98] md:mb-10 md:text-2xl">is here for you!</p>
 
-                            <div className="w-full max-w-[260px] md:max-w-[320px] flex flex-col gap-3 mb-8 md:mb-10">
+                            <div className="mb-8 flex w-full max-w-[260px] flex-col gap-3 md:mb-10 md:max-w-[320px]">
                                 {phoneNumbers.map((num, index) => (
                                     <button
-                                        key={index}
+                                        key={num}
                                         onClick={() => copyToClipboard(num, index)}
-                                        className="relative w-full py-3.5 px-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center hover:border-[#c1cf98] transition-all group"
+                                        className="group relative flex w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3.5 backdrop-blur-md transition-all hover:border-[#c1cf98]"
                                     >
-                                        <span className="text-white/90 font-medium text-[14px] md:text-lg">{num}</span>
+                                        <span className="text-[14px] font-medium text-white/90 md:text-lg">{num}</span>
                                         <div className="absolute right-5 flex flex-col items-center">
                                             {copiedId === index && (
-                                                <span className="absolute bottom-full mb-2 bg-[#c1cf98] text-[#1a120d] text-[10px] font-bold px-2 py-1 rounded-md animate-bounce shadow-lg">
+                                                <span className="absolute bottom-full mb-2 rounded-md bg-[#c1cf98] px-2 py-1 text-[10px] font-bold text-[#1a120d] shadow-lg">
                                                     Copied!
                                                 </span>
                                             )}
-                                            <FiCopy className="text-[#c1cf98] opacity-60 group-hover:opacity-100" />
+                                            <FiCopy className="text-[#c1cf98] opacity-60 transition-opacity group-hover:opacity-100" />
                                         </div>
                                     </button>
                                 ))}
                             </div>
 
-                            <p className="text-yellow-100/80 text-[15px] md:text-base leading-snug max-w-[240px] md:max-w-[340px] font-medium drop-shadow-sm">
-                                Don’t worry — you’re not alone on this journey! Our support team is always ready to guide you.
+                            <p className="max-w-[280px] text-[15px] font-medium leading-snug text-yellow-100/80 drop-shadow-sm md:max-w-[340px] md:text-base">
+                                Don&apos;t worry, you&apos;re not alone on this journey. The same support page can serve clients, trainers, and admins while admin editing is added separately.
                             </p>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ import { FiArrowLeft, FiCheck, FiActivity, FiCalendar } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import SubscriptionModal from '../../components/client/SubscriptionModal.jsx';
 import useStore from '../../store/useStore';
+import { getSharedBackPath } from '../../utils/roleRouting.js';
 
 // Импорт ассетов
 import mem1 from '../../assets/membership/mem1.png';
@@ -22,6 +23,7 @@ export const subsData = [
 
 const Subscription = () => {
     const navigate = useNavigate();
+    const backPath = getSharedBackPath();
     const subscription = useStore((state) => state.subscription);
     const setSubscription = useStore((state) => state.setSubscription);
 
@@ -79,7 +81,7 @@ const Subscription = () => {
 
                 <nav className="relative z-[70] px-6 md:px-10 py-6 md:py-4 flex items-center shrink-0">
                     <button
-                        onClick={(e) => { e.stopPropagation(); navigate('/home'); }}
+                        onClick={(e) => { e.stopPropagation(); navigate(backPath); }}
                         className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all active:scale-95"
                     >
                         <FiArrowLeft className="text-[#c1cf98]"/>
