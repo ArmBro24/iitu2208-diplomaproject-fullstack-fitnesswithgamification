@@ -1,5 +1,7 @@
 package com.example.diploma.service.impl;
 
+import com.example.diploma.event.PointsAwardedEvent;
+import com.example.diploma.kafka.PointsEventProducer;
 import com.example.diploma.model.Character;
 import com.example.diploma.model.PointsLedger;
 import com.example.diploma.model.enums.PointsReason;
@@ -19,6 +21,7 @@ public class GamificationServiceImpl implements GamificationService {
 
     private final CharacterRepository characterRepository;
     private final PointsLedgerRepository pointsLedgerRepository;
+    private final PointsEventProducer pointsEventProducer;
 
     @Override
     public Character createCharacter(Character character) {
@@ -92,6 +95,14 @@ public class GamificationServiceImpl implements GamificationService {
 
         log.info("POINTS APPLIED: memberId={}, delta={}, totalPoints={}, xp={}, level={}",
                 memberId, safeDelta, saved.getTotalPoints(), saved.getXp(), saved.getLevel());
+
+        pointsEventProducer.sendPointsAwarded(
+                new PointsAwardedEvent(
+                        memberId,
+                        safeDelta,
+                        now
+                )
+        );
 
         return saved;
     }

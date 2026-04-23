@@ -12,4 +12,5 @@ public interface GamificationService {
     PointsLedger addLedgerEntry(PointsLedger entry);
 
     Character getCharacter(Long memberId);
+
 }

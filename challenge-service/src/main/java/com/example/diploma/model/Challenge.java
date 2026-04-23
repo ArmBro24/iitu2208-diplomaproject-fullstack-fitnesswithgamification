@@ -1,6 +1,6 @@
 package com.example.diploma.model;
 
-import com.example.diploma.model.enums.PointsReason;
+import com.example.diploma.model.enums.ChallengeStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,31 +11,33 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "\"points_ledger\"")
+@Table(name = "\"challenges\"")
 @Builder(toBuilder = true)
-public class PointsLedger {
+public class Challenge {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private Long memberId;
+    private String title;
 
-    @Column
-    private Long sessionId;
+    @Column(length = 2000)
+    private String description;
 
     @Column(nullable = false)
-    private Integer pointsAwarded;
+    private Integer targetPoints;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PointsReason reason;
-
-    @Column(length = 2000)
-    private String comment;
+    private ChallengeStatus status;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime startsAt;
 
+    @Column(nullable = false)
+    private LocalDateTime endsAt;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

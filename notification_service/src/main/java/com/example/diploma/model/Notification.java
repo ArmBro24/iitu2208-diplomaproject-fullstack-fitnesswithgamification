@@ -1,41 +1,40 @@
 package com.example.diploma.model;
 
-import com.example.diploma.model.enums.PointsReason;
+import com.example.diploma.model.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "\"notifications\"")
 @Getter
 @Setter
-@Entity
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "\"points_ledger\"")
-@Builder(toBuilder = true)
-public class PointsLedger {
+public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long notificationId;
 
     @Column(nullable = false)
-    private Long memberId;
-
-    @Column
-    private Long sessionId;
+    private Long userId;
 
     @Column(nullable = false)
-    private Integer pointsAwarded;
+    private String title;
+
+    @Column(nullable = false, length = 2000)
+    private String message;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PointsReason reason;
+    private NotificationType type;
 
-    @Column(length = 2000)
-    private String comment;
+    @Column(nullable = false)
+    private Boolean isRead;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
 }
