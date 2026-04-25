@@ -36,10 +36,11 @@ const Support = () => {
                         onClick={() => navigate(backPath)}
                         className="rounded-xl bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 md:rounded-2xl md:p-3 md:text-3xl"
                     >
-                        <FiArrowLeft className="text-yellow-100/80" />
+                        <FiArrowLeft className="text-yellow-100/80"/>
                     </button>
 
-                    <h1 className="pr-12 text-center text-2xl font-medium tracking-tight text-yellow-100/80 md:text-3xl">
+                    {/* Добавлен flex-grow и настроен pr для идеальной центровки */}
+                    <h1 className="flex-grow text-center text-2xl font-medium tracking-tight text-yellow-100/80 md:text-3xl pr-10 md:pr-14">
                         Support
                     </h1>
                 </nav>
@@ -47,7 +48,8 @@ const Support = () => {
                 <div className="relative z-10 flex flex-grow flex-col items-center justify-start px-6 pt-12 md:pt-0">
                     <div className="relative w-full max-w-[380px] py-14 md:-mt-8 md:max-w-[500px] md:py-20">
                         <div className="absolute inset-0 z-0 flex items-center justify-center">
-                            <div className="h-full w-full scale-x-[1.6] scale-y-[1.3] md:scale-x-[1.5] md:scale-y-[1.2]">
+                            <div
+                                className="h-full w-full scale-x-[1.6] scale-y-[1.3] md:scale-x-[1.5] md:scale-y-[1.2]">
                                 <div
                                     className="absolute inset-0"
                                     style={{

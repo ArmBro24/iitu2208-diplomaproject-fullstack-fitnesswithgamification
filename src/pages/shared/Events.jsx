@@ -30,16 +30,18 @@ const Events = () => {
                         onClick={() => navigate(backPath)}
                         className="rounded-xl bg-white/5 p-2 text-2xl transition-all hover:bg-white/10 md:rounded-2xl md:p-3 md:text-3xl"
                     >
-                        <FiArrowLeft className="text-[#c1cf98]" />
+                        <FiArrowLeft className="text-[#c1cf98]"/>
                     </button>
 
-                    <h1 className="pr-12 text-center text-2xl font-medium tracking-tight text-yellow-100/80 md:text-3xl">
+                    {/* Добавлен класс flex-grow и исправлен pr */}
+                    <h1 className="flex-grow text-center text-2xl font-medium tracking-tight text-yellow-100/80 md:text-3xl pr-10 md:pr-14">
                         Events
                     </h1>
                 </nav>
 
                 <div className="relative z-10 flex flex-col">
-                    <div className="flex snap-x snap-mandatory items-center gap-6 overflow-x-auto px-6 py-4 md:gap-10 md:px-16 md:py-6">
+                    <div
+                        className="flex snap-x snap-mandatory items-center gap-6 overflow-x-auto px-6 py-4 md:gap-10 md:px-16 md:py-6">
                         {eventsData.map((event) => (
                             <div
                                 key={event.id}
