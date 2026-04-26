@@ -21,7 +21,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
 
     @Override
-    public AuthResponse register(String email, String password) {
+    public AuthResponse register(String email, String password, String role) {
 
         boolean exists = userRepository.findAll().stream()
                 .anyMatch(u -> u.getEmail().equalsIgnoreCase(email));
@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
         User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(password))
-                .role(Role.MEMBER)
+                .role(role != null ? Role.valueOf(role.toUpperCase()) : Role.MEMBER)
                 .createdAt(LocalDateTime.now())
                 .build();
 
