@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiMail, FiLock } from 'react-icons/fi';
+import api from '../../utils/api';
 
 import bgMobile from '../../assets/login_back_mob.jpg';
 import bgDesktop from '../../assets/login_back_desk.jpg';
@@ -18,23 +19,34 @@ const Login = ({ onLogin }) => {
         return () => cancelAnimationFrame(animation);
     }, []);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        const password = e.target.querySelector('input[type="password"]').value;
 
-        if (email === 'client@gmail.com') {
-            setActiveRole('client');
-            onLogin(email);
-            navigate('/home');
-        } else if (email === 'trainer@gmail.com') {
-            setActiveRole('trainer');
-            onLogin(email);
-            navigate('/trainer/dashboard');
-        } else if (email === 'admin@gmail.com') {
-            setActiveRole('admin');
-            onLogin(email);
-            navigate('/admin/dashboard');
-        } else {
-            alert('Wrong email!');
+        try {
+            // Делаем реальный запрос к твоему бэкенду
+            const response = await api.post('/api/auth/login', {
+                email: email,
+                password: password
+            });
+
+            if (response.data.token) {
+                // Сохраняем роль, которую прислал бэк
+                const userRole = response.data.role.toLowerCase(); // станет 'coach', 'member' или 'admin'
+                setActiveRole(userRole);
+                onLogin(email);
+
+                if (userRole === 'coach') {
+                    navigate('/trainer/dashboard');
+                } else if (userRole === 'admin') {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/home');
+                }
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            alert(error.response?.data?.message || 'Ошибка входа! Проверь базу данных.');
         }
     };
 

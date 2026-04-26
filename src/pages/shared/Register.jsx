@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PatternFormat } from 'react-number-format';
 import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт
+import api from '../../utils/api';
 import {
     FiUser,
     FiMail,
@@ -12,16 +13,35 @@ import {
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 
+
+
 const Register = () => { // 2. Убран onNavigate из пропсов
+    const [role, setRole] = useState('MEMBER');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [gender, setGender] = useState('male');
 
     // 3. Инициализация навигатора
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Здесь логика регистрации
-        navigate('/login'); // Переход после сабмита
+
+        try {
+            const response = await api.post('/api/auth/register', {
+                email: email,
+                password: password,
+                role: role // Отправляем выбранную роль
+            });
+
+            if (response.status === 201 || response.status === 200) {
+                alert('Success! Now you can login.');
+                navigate('/login');
+            }
+        } catch (error) {
+            console.error("Registration error:", error);
+            alert(error.response?.data?.message || 'Registration failed.');
+        }
     };
 
     return (
@@ -55,7 +75,7 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                         {/* Email */}
                         <div className="relative">
                             <FiMail className="input-icon"/>
-                            <input type="email" placeholder="e-mail address" className="auth-input pl-10"/>
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e-mail address" className="auth-input pl-10"/>
                         </div>
 
                         {/* Телефон */}
@@ -88,11 +108,14 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                                 />
                             </div>
                             <div className="relative">
-                                <select className="auth-input appearance-none cursor-pointer text-sm pl-3 pr-8">
-                                    <option value="" disabled defaultValue>select role</option>
-                                    <option value="client">Client</option>
-                                    <option value="trainer">Trainer</option>
-                                    <option value="admin">Admin</option>
+                                <select
+                                    className="auth-input appearance-none cursor-pointer text-sm pl-3 pr-8"
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                >
+                                    <option value="MEMBER">Client</option>
+                                    <option value="COACH">Trainer</option>
+                                    <option value="ADMIN">Admin</option>
                                 </select>
                                 <FiChevronDown
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"/>
@@ -100,7 +123,8 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                         </div>
 
                         {/* Переключатель пола */}
-                        <div className="relative flex bg-white/5 rounded-2xl p-1 border border-white/10 overflow-hidden">
+                        <div
+                            className="relative flex bg-white/5 rounded-2xl p-1 border border-white/10 overflow-hidden">
                             <div
                                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out z-0 ${
                                     gender === 'male' ? 'left-1' : 'left-[50%]'
@@ -129,7 +153,8 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                         {/* Пароль */}
                         <div className="relative">
                             <FiLock className="input-icon"/>
-                            <input type="password" placeholder="password" className="auth-input pl-10"/>
+                            <input type="password" value={password}
+                                   onChange={(e) => setPassword(e.target.value)} placeholder="password" className="auth-input pl-10"/>
                         </div>
 
                         {/* Нижняя панель: логин и кнопка сабмита */}
