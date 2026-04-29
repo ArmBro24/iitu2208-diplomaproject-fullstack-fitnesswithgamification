@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import { getSharedBackPath } from '../../utils/roleRouting.js';
@@ -20,7 +20,8 @@ const eventsData = [
 
 const Events = () => {
     const navigate = useNavigate();
-    const backPath = getSharedBackPath();
+    const location = useLocation();
+    const backPath = location.state?.backPath ?? getSharedBackPath();
 
     return (
         <Background>

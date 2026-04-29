@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiArrowLeft, FiCalendar, FiChevronRight, FiTrendingUp, FiUser } from 'react-icons/fi';
+import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser } from 'react-icons/fi';
 import avatarMe from '../../assets/avatars/avatar-me.png';
 import { InfoBox, SectionCard } from './TrainerShared.jsx';
 
@@ -29,7 +29,9 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
             <div className="mt-6 grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
                 <div className="space-y-5">
                     <div className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
-                        <div className="flex items-center gap-4">
+                        <p className="text-sm uppercase tracking-[0.18em] text-[#f0ddd6]/55">Profile</p>
+
+                        <div className="mt-4 flex items-center gap-4">
                             <div className="relative h-[88px] w-[88px] overflow-hidden rounded-full border border-white/15 bg-[radial-gradient(circle_at_30%_30%,#f19add,#704436)]">
                                 <img
                                     src={avatarMe}
@@ -39,24 +41,20 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
                             </div>
 
                             <div>
-                                <p className="text-sm uppercase tracking-[0.18em] text-[#f0ddd6]/55">Client card</p>
-                                <h2 className="mt-1 text-[1.7rem] font-black text-[#f5efe7]">{selectedClient.name}</h2>
+                                <h2 className="text-[1.7rem] font-black text-[#f5efe7]">{selectedClient.name}</h2>
                                 <p className="mt-1 text-sm text-[#d7cabc]">{selectedClient.goal}</p>
                             </div>
                         </div>
 
                         <div className="mt-5 grid grid-cols-2 gap-3">
                             <InfoBox label="Level" value={selectedClient.level} />
-                            <InfoBox label="Attendance" value={selectedClient.attendance} />
                             <InfoBox label="Progress" value={`${selectedClient.progress}%`} />
                             <InfoBox label="Streak" value={selectedClient.streak} />
+                            <InfoBox label="Status" value={selectedClient.status} />
                         </div>
 
                         <div className="mt-5 rounded-[24px] bg-[rgba(108,115,63,0.3)] px-4 py-4">
-                            <div className="flex items-center gap-2 text-[#efe4d0]">
-                                <FiCalendar size={16} />
-                                <span className="text-sm">Next workout</span>
-                            </div>
+                            <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Workouts</p>
                             <p className="mt-3 text-[1.1rem] font-semibold text-[#f8efe4]">{selectedClient.nextWorkout}</p>
                         </div>
 
@@ -71,7 +69,7 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
                         </div>
                     </div>
 
-                    <SectionCard title="Coach Note">
+                    <SectionCard title="Workouts">
                         <p className="text-sm leading-relaxed text-[#f3e8dc]">
                             {selectedClient.note}
                         </p>
@@ -79,15 +77,15 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
                 </div>
 
                 <div className="space-y-5">
-                    <SectionCard title="Performance Snapshot">
+                    <SectionCard title="Progress">
                         <div className="space-y-4">
                             <StatBar label="Challenge completion" value={selectedClient.progress} />
-                            <StatBar label="Attendance reliability" value={parseInt(selectedClient.attendance, 10)} />
                             <StatBar label="Consistency score" value={Math.min(selectedClient.progress + 8, 100)} />
+                            <StatBar label="Momentum score" value={Math.min(selectedClient.progress + 4, 100)} />
                         </div>
                     </SectionCard>
 
-                    <SectionCard title="Recent Activity">
+                    <SectionCard title="Activity">
                         <div className="space-y-3">
                             {(selectedClient.activity ?? []).map((item, index) => (
                                 <ActivityRow key={`${item.title}-${index}`} title={item.title} subtitle={item.subtitle} />

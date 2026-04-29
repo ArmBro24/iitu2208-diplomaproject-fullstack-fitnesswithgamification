@@ -1,11 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    FiCalendar,
-    FiCheckSquare,
-    FiGrid,
-    FiHome,
-    FiUser
-} from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import TrainerClientsView from '../../components/trainer/TrainerClientsView.jsx';
 import TrainerAssignWorkoutView from '../../components/trainer/TrainerAssignWorkoutView.jsx';
 import TrainerAttendanceView from '../../components/trainer/TrainerAttendanceView.jsx';
@@ -21,11 +15,14 @@ import {
     noiseStyle
 } from '../../components/trainer/trainerData.js';
 import { DesktopNavButton } from '../../components/trainer/TrainerShared.jsx';
+import { setActiveRole } from '../../utils/roleRouting.js';
 
 const TRAINER_STORAGE_KEY = 'herofit-trainer-dashboard';
 
 const Trainers = ({ onLogout }) => {
-    const [view, setView] = useState('home');
+    const navigate = useNavigate();
+    const [view, setView] = useState('dashboard');
+    const [clientsSubView, setClientsSubView] = useState(() => readStoredState().clientsSubView ?? 'list');
     const [clients, setClients] = useState(() => readStoredState().clients ?? initialClients);
     const [assignedWorkouts, setAssignedWorkouts] = useState(() => readStoredState().assignedWorkouts ?? initialAssignedWorkouts);
     const [scheduleItems, setScheduleItems] = useState(() => readStoredState().scheduleItems ?? initialScheduleItems);
@@ -35,6 +32,22 @@ const Trainers = ({ onLogout }) => {
         () => clients.find((client) => client.id === selectedClientId) ?? clients[0],
         [clients, selectedClientId]
     );
+
+    useEffect(() => {
+        setActiveRole('trainer');
+    }, []);
+
+    const keyMetrics = useMemo(() => {
+        const missedWorkouts = scheduleItems.filter((item) => item.status === 'missed').length;
+        const pendingUpdates = clients.filter((item) => item.progressRequestPending).length;
+
+        return [
+            { title: 'Active Clients', value: String(clients.length), accent: 'olive' },
+            { title: 'Sessions Today', value: String(scheduleItems.length), accent: 'violet' },
+            { title: 'Pending Updates', value: String(pendingUpdates), accent: 'gold' },
+            { title: 'Missed Workouts', value: String(missedWorkouts), accent: 'rose' },
+        ];
+    }, [clients, scheduleItems]);
 
     const handleAssignWorkout = ({ clientId, workout, dueDate, timeSlot }) => {
         const client = clients.find((item) => item.id === clientId);
@@ -133,10 +146,35 @@ const Trainers = ({ onLogout }) => {
             assignedWorkouts,
             scheduleItems,
             selectedClientId,
+            clientsSubView,
         };
 
         window.localStorage.setItem(TRAINER_STORAGE_KEY, JSON.stringify(payload));
-    }, [assignedWorkouts, clients, scheduleItems, selectedClientId]);
+    }, [assignedWorkouts, clients, clientsSubView, scheduleItems, selectedClientId]);
+
+    const openClientsList = () => {
+        setClientsSubView('list');
+        setView('clients');
+    };
+
+    const openClientDetails = () => {
+        setClientsSubView('details');
+        setView('clients');
+    };
+
+    const openAssignWorkout = () => {
+        setClientsSubView('assign');
+        setView('clients');
+    };
+
+    const handleRootNavigation = (nextView) => {
+        if (nextView === 'clients') {
+            openClientsList();
+            return;
+        }
+
+        setView(nextView);
+    };
 
     return (
         <div className="min-h-screen bg-[#111412] px-0 py-0 text-white md:px-6 md:py-8">
@@ -157,24 +195,25 @@ const Trainers = ({ onLogout }) => {
                             </div>
 
                             <div className="space-y-3">
-                                <DesktopNavButton label="Home" active={view === 'home'} onClick={() => setView('home')} />
-                                <DesktopNavButton label="Schedule" active={view === 'schedule'} onClick={() => setView('schedule')} />
-                                <DesktopNavButton label="Attendance" active={view === 'attendance'} onClick={() => setView('attendance')} />
-                                <DesktopNavButton label="My Clients" active={view === 'clients'} onClick={() => setView('clients')} />
-                                <DesktopNavButton label="Client Details" active={view === 'clientDetails'} onClick={() => setView('clientDetails')} />
-                                <DesktopNavButton label="Assign Workout" active={view === 'assign'} onClick={() => setView('assign')} />
-                                <DesktopNavButton label="Profile" active={view === 'profile'} onClick={() => setView('profile')} />
+                                <DesktopNavButton label="Dashboard" active={view === 'dashboard'} onClick={() => handleRootNavigation('dashboard')} />
+                                <DesktopNavButton label="Clients" active={view === 'clients'} onClick={openClientsList} />
+                                <DesktopNavButton label="Schedule" active={view === 'schedule'} onClick={() => handleRootNavigation('schedule')} />
+                                <DesktopNavButton label="Events" onClick={() => navigate('/events', { state: { backPath: '/trainer/dashboard' } })} />
+                                <DesktopNavButton label="Attendance" active={view === 'attendance'} onClick={() => handleRootNavigation('attendance')} />
+                                <DesktopNavButton label="Profile" active={view === 'profile'} onClick={() => handleRootNavigation('profile')} />
                                 <DesktopNavButton label="Log out" danger onClick={onLogout} />
                             </div>
                         </aside>
 
                         <main className="flex-1">
-                            {view === 'home' && (
+                            {view === 'dashboard' && (
                                 <TrainerHomeView
+                                    onOpenClients={openClientsList}
                                     onOpenSchedule={() => setView('schedule')}
                                     onOpenProfile={() => setView('profile')}
                                     clients={clients}
                                     assignedWorkouts={assignedWorkouts}
+                                    keyMetrics={keyMetrics}
                                     selectedClient={selectedClient}
                                     selectedClientId={selectedClientId}
                                     setSelectedClientId={setSelectedClientId}
@@ -183,7 +222,7 @@ const Trainers = ({ onLogout }) => {
 
                             {view === 'schedule' && (
                                 <TrainerScheduleView
-                                    onBack={() => setView('home')}
+                                    onBack={() => setView('dashboard')}
                                     onOpenAttendance={() => setView('attendance')}
                                     onOpenProfile={() => setView('profile')}
                                     scheduleItems={scheduleItems}
@@ -192,39 +231,37 @@ const Trainers = ({ onLogout }) => {
 
                             {view === 'attendance' && (
                                 <TrainerAttendanceView
-                                    onBack={() => setView('home')}
+                                    onBack={() => setView('schedule')}
                                     onOpenProfile={() => setView('profile')}
-                                    onOpenClients={() => setView('clients')}
                                     sessions={scheduleItems}
                                     onChangeStatus={handleAttendanceStatusChange}
                                 />
                             )}
 
-                            {view === 'clients' && (
+                            {view === 'clients' && clientsSubView === 'list' && (
                                 <TrainerClientsView
-                                    onBack={() => setView('home')}
-                                    onOpenDetails={() => setView('clientDetails')}
+                                    onBack={() => setView('dashboard')}
+                                    onOpenDetails={openClientDetails}
                                     onOpenProfile={() => setView('profile')}
-                                    onAssignWorkout={() => setView('assign')}
                                     clients={clients}
                                     selectedClient={selectedClient}
                                     setSelectedClientId={setSelectedClientId}
                                 />
                             )}
 
-                            {view === 'clientDetails' && (
+                            {view === 'clients' && clientsSubView === 'details' && (
                                 <TrainerClientDetailsView
-                                    onBack={() => setView('clients')}
+                                    onBack={openClientsList}
                                     onOpenProfile={() => setView('profile')}
-                                    onAssignWorkout={() => setView('assign')}
+                                    onAssignWorkout={openAssignWorkout}
                                     onRequestProgressUpdate={handleRequestProgressUpdate}
                                     selectedClient={selectedClient}
                                 />
                             )}
 
-                            {view === 'assign' && (
+                            {view === 'clients' && clientsSubView === 'assign' && (
                                 <TrainerAssignWorkoutView
-                                    onBack={() => setView('clients')}
+                                    onBack={openClientDetails}
                                     onOpenProfile={() => setView('profile')}
                                     selectedClient={selectedClient}
                                     onAssignWorkout={handleAssignWorkout}
@@ -233,15 +270,12 @@ const Trainers = ({ onLogout }) => {
 
                             {view === 'profile' && (
                                 <TrainerProfileView
-                                    onBack={() => setView('home')}
-                                    onOpenClients={() => setView('clients')}
-                                    onOpenSchedule={() => setView('schedule')}
+                                    onBack={() => setView('dashboard')}
                                     onLogout={onLogout}
                                 />
                             )}
                         </main>
 
-                        <MobileBottomNav currentView={view} onChange={setView} />
                     </div>
                 </div>
             </div>
@@ -266,36 +300,5 @@ const formatRequestTimestamp = () =>
         day: 'numeric',
         year: 'numeric',
     }).format(new Date());
-
-const MobileBottomNav = ({ currentView, onChange }) => {
-    const items = [
-        { id: 'home', label: 'Home', icon: FiHome },
-        { id: 'schedule', label: 'Schedule', icon: FiCalendar },
-        { id: 'attendance', label: 'Attend.', icon: FiCheckSquare },
-        { id: 'clients', label: 'Clients', icon: FiGrid },
-        { id: 'profile', label: 'Profile', icon: FiUser },
-    ];
-
-    return (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[rgba(15,16,18,0.82)] px-4 py-3 backdrop-blur-xl lg:hidden">
-            <div className="mx-auto flex max-w-[520px] items-center justify-around rounded-full border border-white/10 bg-black/20 px-3 py-2">
-                {items.map(({ id, label, icon: Icon }) => (
-                    <button
-                        key={id}
-                        onClick={() => onChange(id)}
-                        className={`flex min-w-[72px] flex-col items-center gap-1 rounded-full px-3 py-2 text-[11px] transition-all ${
-                            currentView === id
-                                ? 'bg-[rgba(138,137,80,0.38)] text-white'
-                                : 'text-white/60'
-                        }`}
-                    >
-                        <Icon size={18} />
-                        <span>{label}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-};
 
 export default Trainers;

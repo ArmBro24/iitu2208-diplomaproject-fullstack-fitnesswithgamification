@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { FiMail, FiLock } from 'react-icons/fi';
-import api from '../../utils/api';
-
+import React, { useEffect, useState } from 'react';
+import { FiLock, FiMail } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import bgMobile from '../../assets/login_back_mob.jpg';
 import bgDesktop from '../../assets/login_back_desk.jpg';
-import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api';
 import { setActiveRole } from '../../utils/roleRouting.js';
 
 const Login = ({ onLogin }) => {
@@ -22,17 +21,37 @@ const Login = ({ onLogin }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const password = e.target.querySelector('input[type="password"]').value;
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (normalizedEmail === 'trainer@gmail.com') {
+            setActiveRole('trainer');
+            onLogin(email);
+            navigate('/trainer/dashboard');
+            return;
+        }
+
+        if (normalizedEmail === 'admin@gmail.com') {
+            setActiveRole('admin');
+            onLogin(email);
+            navigate('/admin/dashboard');
+            return;
+        }
+
+        if (normalizedEmail === 'client@gmail.com') {
+            setActiveRole('client');
+            onLogin(email);
+            navigate('/home');
+            return;
+        }
 
         try {
-            // Делаем реальный запрос к твоему бэкенду
             const response = await api.post('/api/auth/login', {
-                email: email,
-                password: password
+                email,
+                password,
             });
 
             if (response.data.token) {
-                // Сохраняем роль, которую прислал бэк
-                const userRole = response.data.role.toLowerCase(); // станет 'coach', 'member' или 'admin'
+                const userRole = response.data.role.toLowerCase();
                 setActiveRole(userRole);
                 onLogin(email);
 
@@ -45,59 +64,58 @@ const Login = ({ onLogin }) => {
                 }
             }
         } catch (error) {
-            console.error("Login error:", error);
-            alert(error.response?.data?.message || 'Ошибка входа! Проверь базу данных.');
+            console.error('Login error:', error);
+            alert(error.response?.data?.message || 'Login failed. Use demo emails or start the backend.');
         }
     };
 
     return (
-        <div className="relative min-h-screen w-full bg-[#0a1211] overflow-hidden flex items-center justify-start font-rubik">
-
-            {/* ФОНОВЫЕ ИЗОБРАЖЕНИЯ */}
+        <div className="relative min-h-screen w-full overflow-hidden bg-[#0a1211] font-rubik flex items-center justify-start">
             <div className="absolute inset-0 z-0">
-                <div className="block md:hidden w-full h-full bg-cover bg-center transition-opacity duration-1000 opacity-100"
-                     style={{ backgroundImage: `url(${bgMobile})` }} />
-                <div className="hidden md:block w-full h-full bg-cover bg-center transition-opacity duration-1000 opacity-100"
-                     style={{ backgroundImage: `url(${bgDesktop})` }} />
-            </div>
-
-            {/* ШУМ */}
-            <div className="absolute inset-0 z-[5] pointer-events-none opacity-40"
-                 style={{
-                     backgroundImage: `url("https://grainy-gradients.vercel.app/noise.svg")`,
-                     backgroundSize: '600px',
-                     filter: 'invert(100%) contrast(150%)',
-                     mixBlendMode: 'multiply',
-                 }}>
-            </div>
-
-            {/* ВЫЕЗЖАЮЩАЯ ШТОРКА */}
-            <div className={`
-                absolute z-10 transition-all duration-[1000ms] ease-out flex items-center justify-center
-                left-0 top-1/2 -translate-y-1/2
-                ${isLoaded ? 'translate-x-0' : '-translate-x-full'}
-                md:left-1/2 md:ml-[-400px] md:top-0 md:translate-x-0
-                ${isLoaded ? 'md:translate-y-0' : 'md:-translate-y-full'}
-            `}>
                 <div
-                    className={`
-                        bg-[#071019]/60 backdrop-blur-sm flex flex-col justify-center px-8 shadow-2xl transition-all duration-500
-                        w-[340px] h-[550px]
-                        rounded-[0px_300px_40px_0px]
-                        md:w-[800px] md:h-[600px]
-                        md:rounded-[0px_0px_300px_300px]
-                    `}
-                >
-                    <div className="w-full max-w-[340px] md:max-w-md mx-auto">
+                    className="block h-full w-full bg-cover bg-center opacity-100 transition-opacity duration-1000 md:hidden"
+                    style={{ backgroundImage: `url(${bgMobile})` }}
+                />
+                <div
+                    className="hidden h-full w-full bg-cover bg-center opacity-100 transition-opacity duration-1000 md:block"
+                    style={{ backgroundImage: `url(${bgDesktop})` }}
+                />
+            </div>
 
-                        <div className="flex items-baseline gap-2 mb-10 md:mb-12 justify-start">
-                            <h1 className="text-[#c1cf98] text-4xl md:text-5xl font-black tracking-tight">
+            <div
+                className="absolute inset-0 z-[5] pointer-events-none opacity-40"
+                style={{
+                    backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")',
+                    backgroundSize: '600px',
+                    filter: 'invert(100%) contrast(150%)',
+                    mixBlendMode: 'multiply',
+                }}
+            />
+
+            <div
+                className={`
+                    absolute z-10 flex items-center justify-center transition-all duration-[1000ms] ease-out
+                    left-0 top-1/2 -translate-y-1/2
+                    ${isLoaded ? 'translate-x-0' : '-translate-x-full'}
+                    md:left-1/2 md:top-0 md:ml-[-400px] md:translate-x-0
+                    ${isLoaded ? 'md:translate-y-0' : 'md:-translate-y-full'}
+                `}
+            >
+                <div
+                    className="
+                        flex h-[550px] w-[340px] flex-col justify-center bg-[#071019]/60 px-8 shadow-2xl backdrop-blur-sm transition-all duration-500
+                        rounded-[0px_300px_40px_0px]
+                        md:h-[600px] md:w-[800px] md:rounded-[0px_0px_300px_300px]
+                    "
+                >
+                    <div className="mx-auto w-full max-w-[340px] md:max-w-md">
+                        <div className="mb-10 flex items-baseline justify-start gap-2 md:mb-12">
+                            <h1 className="text-4xl font-black tracking-tight text-[#c1cf98] md:text-5xl">
                                 HeroFit
                             </h1>
-                            <span className="text-gray-400 text-xl font-normal">Login</span>
+                            <span className="text-xl font-normal text-gray-400">Login</span>
                         </div>
 
-                        {/* Привязываем handleSubmit к форме */}
                         <form className="w-full space-y-6" onSubmit={handleSubmit}>
                             <div className="relative">
                                 <FiMail className="input-icon" />
@@ -114,18 +132,21 @@ const Login = ({ onLogin }) => {
                             <div className="relative">
                                 <FiLock className="input-icon" />
                                 <input type="password" placeholder="password" className="auth-input pl-12" />
-                                <button type="button" className="absolute right-5 top-1/2 -translate-y-1/2 text-[0.85rem] text-gray-500 hover:text-white transition-colors">
+                                <button
+                                    type="button"
+                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-[0.85rem] text-gray-500 transition-colors hover:text-white"
+                                >
                                     forgot
                                 </button>
                             </div>
 
-                            <div className="flex flex-col gap-8 mt-8 w-full">
-                                <p className="text-gray-500 text-[0.95rem] m-0 leading-none pl-2">
-                                    Don't have an account?
+                            <div className="mt-8 flex w-full flex-col gap-8">
+                                <p className="m-0 pl-2 text-[0.95rem] leading-none text-gray-500">
+                                    Don&apos;t have an account?
                                     <button
                                         type="button"
                                         onClick={() => navigate('/register')}
-                                        className="text-white hover:underline ml-1 bg-transparent border-none p-0 cursor-pointer font-medium"
+                                        className="ml-1 cursor-pointer border-none bg-transparent p-0 font-medium text-white hover:underline"
                                     >
                                         Sign up
                                     </button>
@@ -134,9 +155,9 @@ const Login = ({ onLogin }) => {
                                 <div className="w-full flex justify-end">
                                     <button
                                         type="submit"
-                                        className="px-10 py-3.5 rounded-full border border-[#c1cf98] text-[#c1cf98] hover:bg-[#c1cf98] hover:text-black transition-all flex items-center gap-2 group whitespace-nowrap"
+                                        className="group flex items-center gap-2 whitespace-nowrap rounded-full border border-[#c1cf98] px-10 py-3.5 text-[#c1cf98] transition-all hover:bg-[#c1cf98] hover:text-black"
                                     >
-                                        Login <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                        Login <span className="transition-transform group-hover:translate-x-1">→</span>
                                     </button>
                                 </div>
                             </div>

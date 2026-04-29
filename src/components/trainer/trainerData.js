@@ -29,7 +29,7 @@ export const alerts = [
 ];
 
 export const initialAssignedWorkouts = [
-    { id: 1, client: 'Aruzhan K.', workout: 'Lower Body Power', time: '13:00 - 14:00', status: 'attended' },
+    { id: 1, client: 'Aruzhan K.', workout: 'Lower Body Power', time: '13:00 - 14:00', status: 'present' },
     { id: 2, client: 'Dias N.', workout: 'Cardio Endurance', time: '15:00 - 16:00', status: 'missed' },
     { id: 3, client: 'Madi B.', workout: 'Mobility Recovery', time: '18:00 - 19:00', status: 'upcoming' },
 ];
@@ -120,11 +120,11 @@ export const leaderboardPreview = [
 ];
 
 export const initialScheduleItems = [
-    { id: 1, name: 'Workout Name', client: 'Aruzhan K.', time: '13:00 - 14:00', status: 'attended' },
+    { id: 1, name: 'Workout Name', client: 'Aruzhan K.', time: '13:00 - 14:00', status: 'present' },
     { id: 2, name: 'Workout Name', client: 'Dias N.', time: '13:00 - 14:00', status: 'missed' },
     { id: 3, name: 'Workout Name', client: 'Madi B.', time: '13:00 - 14:00', status: 'upcoming' },
-    { id: 4, name: 'Workout Name', client: 'Akerke T.', time: '13:00 - 14:00', status: 'attended' },
-    { id: 5, name: 'Workout Name', client: 'Sanzhar A.', time: '13:00 - 14:00', status: 'attended' },
+    { id: 4, name: 'Workout Name', client: 'Akerke T.', time: '13:00 - 14:00', status: 'late' },
+    { id: 5, name: 'Workout Name', client: 'Sanzhar A.', time: '13:00 - 14:00', status: 'present' },
 ];
 
 export const workoutTemplates = [
@@ -167,8 +167,9 @@ export const noiseStyle = {
 };
 
 export const statusTextClass = (status) => {
-    if (status === 'attended') return 'text-[#d8b3ff]';
+    if (status === 'present') return 'text-[#d8b3ff]';
     if (status === 'missed') return 'text-[#ff8383]';
+    if (status === 'late') return 'text-[#f0dd95]';
     if (status === 'upcoming') return 'text-[#e1cb6d]';
     return 'text-[#f0e7d8]';
 };
