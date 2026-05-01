@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiLogOut, FiSettings, FiUser } from 'react-icons/fi';
+import { FiArrowLeft, FiSettings, FiUser } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import avatarMe from '../../assets/avatars/avatar-me.png';
 import { trainer } from './trainerData.js';
 
-const TrainerProfileView = ({ onBack, onLogout }) => {
+const TrainerProfileView = ({ onBack }) => {
     const navigate = useNavigate();
 
     return (
@@ -38,14 +38,7 @@ const TrainerProfileView = ({ onBack, onLogout }) => {
                         </h1>
                     </div>
 
-                    <div className="hidden md:[grid-area:exit] md:flex items-center justify-end px-10 pt-6 pb-2">
-                        <button
-                            onClick={onLogout}
-                            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
-                        >
-                            <FiLogOut size={22} className="text-red-300/80" />
-                        </button>
-                    </div>
+                    <div className="hidden md:[grid-area:exit] md:block" />
 
                     <div className="[grid-area:right-panel] md:hidden flex flex-col justify-between py-6 items-end">
                         <div className="text-right pr-4 pb-2">
@@ -100,7 +93,7 @@ const TrainerProfileView = ({ onBack, onLogout }) => {
                     </div>
 
                     <div className="[grid-area:bottom] md:[grid-area:actions] px-4 pb-8 pt-6 md:px-10">
-                        <div className="grid gap-4 md:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-2">
                             <ActionCard
                                 icon={FiSettings}
                                 title="Settings"
@@ -114,14 +107,6 @@ const TrainerProfileView = ({ onBack, onLogout }) => {
                                 body="Open support contacts and shared help information."
                                 onClick={() => navigate('/support')}
                             />
-
-                            <ActionCard
-                                icon={FiLogOut}
-                                title="Logout"
-                                body="Sign out from the trainer account."
-                                onClick={onLogout}
-                                danger
-                            />
                         </div>
                     </div>
                 </div>
@@ -130,16 +115,12 @@ const TrainerProfileView = ({ onBack, onLogout }) => {
     );
 };
 
-const ActionCard = ({ body, danger = false, icon: Icon, onClick, title }) => (
+const ActionCard = ({ body, icon: Icon, onClick, title }) => (
     <button
         onClick={onClick}
-        className={`rounded-[28px] border p-5 text-left transition-all ${
-            danger
-                ? 'border-red-400/20 bg-red-400/10 hover:bg-red-400/15'
-                : 'border-white/10 bg-white/5 hover:bg-white/10'
-        }`}
+        className="rounded-[28px] border border-white/10 bg-white/5 p-5 text-left transition-all hover:bg-white/10"
     >
-        <Icon className={danger ? 'text-red-300/80' : 'text-[#c1cf98]'} size={22} />
+        <Icon className="text-[#c1cf98]" size={22} />
         <h3 className="mt-4 text-[1.2rem] font-bold text-white">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
     </button>

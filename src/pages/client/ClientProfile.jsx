@@ -9,6 +9,7 @@ import coachImg from '../../assets/my_coach.png';
 import aiChatImg from '../../assets/ai_chat_ill.png';
 import myPlanImg from '../../assets/my_plan.png';
 import cupImg from '../../assets/cup.png';
+import AIChat from '../../components/ai/AIChat.jsx';
 
 const ClientProfile = ({ onNavigateToCoachProfile }) => {
 
@@ -22,6 +23,7 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
 
     const [showNoCoachModal, setShowNoCoachModal] = useState(false);
     const [showNoSubModal, setShowNoSubModal] = useState(false);
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
     const navigate = useNavigate();
 
     const hasCoach = coachContract && coachContract.trainerId !== null;
@@ -255,10 +257,14 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                         <div className="w-[50%] md:contents flex flex-col gap-y-6 justify-start">
                             {/* AI CHAT */}
                             <div className="md:[grid-area:ai] flex items-end justify-center md:pb-10">
-                                <button className="w-full md:w-[70%] py-4 md:py-8 md:min-h-[200px] flex flex-row md:flex-col items-center justify-center gap-3
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAIChatOpen(true)}
+                                    className="w-full md:w-[70%] py-4 md:py-8 md:min-h-[200px] flex flex-row md:flex-col items-center justify-center gap-3
                                     bg-[#4087a1]/30 md:bg-white/5 backdrop-blur-md border-2 border-transparent md:border-white/10
                                     hover:border-[#c1cf98] active:border-[#c1cf98]
-                                    rounded-l-[30px] rounded-r-none md:rounded-r-[40px] md:rounded-l-[40px] transition-all duration-300 px-4">
+                                    rounded-l-[30px] rounded-r-none md:rounded-r-[40px] md:rounded-l-[40px] transition-all duration-300 px-4"
+                                >
                                     <div className="hidden md:flex flex-col items-start w-full gap-2 text-left px-4">
                                         <span className="text-white text-sm font-bold uppercase tracking-widest mb-1">Ai Chat</span>
                                         <div className="flex items-center gap-6 w-full">
@@ -296,6 +302,10 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                         </div>
                     </div>
                 </div>
+
+                {isAIChatOpen && (
+                    <AIChat onClose={() => setIsAIChatOpen(false)} />
+                )}
             </div>
 
             <style>{`

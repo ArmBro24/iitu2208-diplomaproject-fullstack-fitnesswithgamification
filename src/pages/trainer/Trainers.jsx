@@ -49,7 +49,7 @@ const Trainers = ({ onLogout }) => {
         ];
     }, [clients, scheduleItems]);
 
-    const handleAssignWorkout = ({ clientId, workout, dueDate, timeSlot }) => {
+    const handleAssignWorkout = ({ clientId, workout, timeSlot }) => {
         const client = clients.find((item) => item.id === clientId);
         if (!client) return;
 
@@ -271,7 +271,6 @@ const Trainers = ({ onLogout }) => {
                             {view === 'profile' && (
                                 <TrainerProfileView
                                     onBack={() => setView('dashboard')}
-                                    onLogout={onLogout}
                                 />
                             )}
                         </main>

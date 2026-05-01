@@ -126,6 +126,7 @@ const TrainerHomeView = ({
                             </div>
                         </DashboardCard>
                     </div>
+
                 </div>
             </div>
         </div>
