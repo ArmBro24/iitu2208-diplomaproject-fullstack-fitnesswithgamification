@@ -9,15 +9,18 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class JwtService {
 
-    // минимум 32 символа для HS256
-    private static final String SECRET = "super_secret_key_123456_super_secret_key";
     private static final long EXP_MS = 1000L * 60 * 60 * 24; // 24h
 
-    private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    private final SecretKey key;
+
+    public JwtService(@Value("${jwt.secret}") String secret) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     public String generateToken(User user) {
         return Jwts.builder()
@@ -26,7 +29,7 @@ public class JwtService {
                 .claim("role", user.getRole().name())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXP_MS))
-                .signWith(key)
+                .signWith(key) // Использует ключ из конструктора
                 .compact();
     }
 

@@ -29,6 +29,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "coach_id")
+    private Long coachId;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

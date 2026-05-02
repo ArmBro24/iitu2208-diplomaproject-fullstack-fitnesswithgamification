@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List; // Не забудьте этот импорт
 
 @Slf4j
 @Service
@@ -24,7 +25,13 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     private final SessionLogRepository sessionLogRepository;
     private final TrainingEventProducer trainingEventProducer;
 
-
+    // --- Новый метод ---
+    @Override
+    public List<TrainingSession> getSessionsByMemberId(Long memberId) {
+        log.info("Fetching sessions for memberId: {}", memberId);
+        return trainingSessionRepository.findAllByMemberId(memberId);
+    }
+    // -------------------
 
     @Override
     public TrainingSession createSession(TrainingSession session) {
@@ -78,4 +85,15 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         return saved;
     }
 
+    @Override
+    public TrainingSession updateSessionStatus(Long sessionId, TrainingSessionStatus status) {
+        TrainingSession session = trainingSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+
+        TrainingSession updated = session.toBuilder()
+                .status(status)
+                .build();
+
+        return trainingSessionRepository.save(updated);
+    }
 }

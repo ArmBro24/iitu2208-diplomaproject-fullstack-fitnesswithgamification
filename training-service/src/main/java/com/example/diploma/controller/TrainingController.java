@@ -5,11 +5,14 @@ import com.example.diploma.controller.dto.CreateSessionRequest;
 import com.example.diploma.controller.dto.SubmitLogRequest;
 import com.example.diploma.model.SessionLog;
 import com.example.diploma.model.TrainingSession;
+import com.example.diploma.model.enums.TrainingSessionStatus;
 import com.example.diploma.service.TrainingSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,7 +21,11 @@ public class TrainingController {
 
     private final TrainingSessionService trainingSessionService;
 
-    // 1) Create training session
+    @GetMapping("/sessions/member/{memberId}")
+    public List<TrainingSession> getMemberSessions(@PathVariable Long memberId) {
+        return trainingSessionService.getSessionsByMemberId(memberId);
+    }
+
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingSession createSession(@RequestBody @Valid CreateSessionRequest req) {
@@ -33,7 +40,6 @@ public class TrainingController {
         return trainingSessionService.createSession(session);
     }
 
-    // 2) Submit session log (member sends results)
     @PostMapping("/logs")
     @ResponseStatus(HttpStatus.CREATED)
     public SessionLog submitLog(@RequestBody @Valid SubmitLogRequest req) {
@@ -47,10 +53,15 @@ public class TrainingController {
         return trainingSessionService.submitLog(log);
     }
 
-    // 3) Approve log (coach confirms + awards points)
     @PatchMapping("/logs/{logId}/approve")
     public SessionLog approveLog(@PathVariable Long logId,
                                  @RequestBody @Valid ApproveLogRequest req) {
         return trainingSessionService.approveLog(logId, req.points(), req.coachComment());
+    }
+
+    @PatchMapping("/sessions/{sessionId}/status")
+    public TrainingSession updateStatus(@PathVariable Long sessionId,
+                                        @RequestParam TrainingSessionStatus status) {
+        return trainingSessionService.updateSessionStatus(sessionId, status);
     }
 }
