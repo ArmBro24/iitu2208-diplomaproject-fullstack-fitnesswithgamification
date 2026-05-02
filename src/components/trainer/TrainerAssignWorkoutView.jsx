@@ -6,8 +6,25 @@ import { InfoBox } from './TrainerShared.jsx';
 
 const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, selectedClient }) => {
     const [selectedTemplate, setSelectedTemplate] = useState(selectedClient.nextWorkout || workoutTemplates[0]);
-    const dueDate = 'Sep 22, 2025';
-    const timeSlot = '18:00 - 19:00';
+
+    const [startDateTime, setStartDateTime] = useState("");
+
+    const handleAssignClick = () => {
+        if (!startDateTime) {
+            alert("Пожалуйста, выберите дату и время тренировки");
+            return;
+        }
+
+        const startDate = new Date(startDateTime);
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+
+        onAssignWorkout({
+            clientId: selectedClient.id,
+            workout: selectedTemplate,
+            startsAt: startDate.toISOString().split('.')[0],
+            endsAt: endDate.toISOString().split('.')[0],
+        });
+    };
 
     return (
         <div className="px-4 pb-24 pt-5 sm:px-6 md:px-8 md:pb-10 md:pt-7 lg:px-12 lg:py-10">
@@ -86,26 +103,20 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                                 </div>
                             </Field>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Field label="Due date">
-                                    <div className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/15 px-4 py-4 text-[#efe4d0]">
-                                        <FiCalendar size={18} />
-                                        <span>{dueDate}</span>
-                                    </div>
-                                </Field>
-
-                                <Field label="Time slot">
-                                    <div className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/15 px-4 py-4 text-[#efe4d0]">
-                                        <FiClock size={18} />
-                                        <span>{timeSlot}</span>
-                                    </div>
-                                </Field>
-                            </div>
+                            <Field label="Set Date and Time">
+                                <div className="relative">
+                                    <input
+                                        type="datetime-local"
+                                        value={startDateTime}
+                                        onChange={(e) => setStartDateTime(e.target.value)}
+                                        className="w-full rounded-[22px] border border-white/10 bg-black/15 px-4 py-4 text-[#efe4d0] outline-none transition-all focus:border-[#dce8c5] focus:bg-black/30"
+                                    />
+                                </div>
+                            </Field>
 
                             <Field label="Trainer instructions">
                                 <div className="rounded-[24px] border border-white/10 bg-black/15 px-4 py-4 text-sm leading-relaxed text-[#f0e3d8]">
-                                    Focus on clean form, steady pacing, and post-session recovery notes. Ask the client to
-                                    submit results before 20:30 for leaderboard sync.
+                                    Focus on clean form, steady pacing, and post-session recovery notes.
                                 </div>
                             </Field>
 
@@ -113,25 +124,22 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                                 <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Assignment preview</p>
                                 <h3 className="mt-3 text-[1.35rem] font-bold text-[#faf1e7]">{selectedTemplate}</h3>
                                 <p className="mt-2 text-sm leading-relaxed text-[#e5d8c7]">
-                                    This workout will be assigned to {selectedClient.name} and shown in the trainer schedule as the next active task.
+                                    {startDateTime
+                                        ? `Scheduled for ${new Date(startDateTime).toLocaleString()}`
+                                        : "Select a date to see the schedule preview."}
                                 </p>
                             </div>
 
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <button
-                                    onClick={() => onAssignWorkout({
-                                        clientId: selectedClient.id,
-                                        workout: selectedTemplate,
-                                        dueDate,
-                                        timeSlot,
-                                    })}
-                                    className="rounded-full border border-[#dce8c5] bg-[rgba(121,76,89,0.34)] px-6 py-4 text-[1rem] font-medium text-white"
+                                    onClick={handleAssignClick}
+                                    className="flex-1 rounded-full border border-[#dce8c5] bg-[rgba(121,76,89,0.34)] px-6 py-4 text-[1rem] font-medium text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     Assign workout
                                 </button>
                                 <button
                                     onClick={onBack}
-                                    className="rounded-full border border-white/10 px-6 py-4 text-[1rem] text-[#e8ddd2]"
+                                    className="rounded-full border border-white/10 px-6 py-4 text-[1rem] text-[#e8ddd2] transition-colors hover:bg-white/5"
                                 >
                                     Cancel
                                 </button>

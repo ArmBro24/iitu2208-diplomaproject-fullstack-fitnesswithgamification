@@ -6,11 +6,12 @@ import CoachPaymentModal from '../../components/client/CoachPaymentModal.jsx';
 import useStore from '../../store/useStore';
 
 const TrainerProfile = () => {
-    // Подключаем стор и привязываем данные к вашим старым именам переменных
     const {
+        currentUser,
         coachContract,
+        assignCoachToClient,
         setCoachContract,
-        setSubscription, // Достаем метод из вашего стора
+        setSubscription,
         selectedTrainer: trainer,
         trainers: trainersData
     } = useStore();
@@ -89,7 +90,14 @@ const TrainerProfile = () => {
     };
 
     const handlePaymentSuccess = () => {
-        setCoachContract({ ...coachContract, status: 'active' });
+        if (currentUser && currentUser.id) {
+            assignCoachToClient(currentUser.id, trainer.id);
+            console.log("Assigning coach for user:", currentUser.id);
+        } else {
+            console.error("User ID not found. Please log in again.");
+            alert("Ошибка: данные пользователя не найдены. Пожалуйста, перезайдите в систему.");
+        }
+
         setShowPaymentModal(false);
     };
 

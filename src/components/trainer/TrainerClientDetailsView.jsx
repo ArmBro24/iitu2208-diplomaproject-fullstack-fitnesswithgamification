@@ -1,9 +1,16 @@
 import React from 'react';
-import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser } from 'react-icons/fi';
+import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser, FiCalendar } from 'react-icons/fi';
 import avatarMe from '../../assets/avatars/avatar-me.png';
 import { InfoBox, SectionCard } from './TrainerShared.jsx';
 
-const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRequestProgressUpdate, selectedClient }) => (
+const TrainerClientDetailsView = ({
+                                      onBack,
+                                      onOpenProfile,
+                                      onAssignWorkout,
+                                      onRequestProgressUpdate,
+                                      selectedClient,
+                                      clientSessions = []
+                                  }) => (
     <div className="px-4 pb-24 pt-5 sm:px-6 md:px-8 md:pb-10 md:pt-7 lg:px-12 lg:py-10">
         <div className="mx-auto max-w-[1040px]">
             <header className="flex items-center justify-between">
@@ -28,6 +35,7 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
 
             <div className="mt-6 grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
                 <div className="space-y-5">
+                    {/* Profile Card */}
                     <div className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
                         <p className="text-sm uppercase tracking-[0.18em] text-[#f0ddd6]/55">Profile</p>
 
@@ -54,8 +62,10 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
                         </div>
 
                         <div className="mt-5 rounded-[24px] bg-[rgba(108,115,63,0.3)] px-4 py-4">
-                            <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Workouts</p>
-                            <p className="mt-3 text-[1.1rem] font-semibold text-[#f8efe4]">{selectedClient.nextWorkout}</p>
+                            <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Next Workout</p>
+                            <p className="mt-3 text-[1.1rem] font-semibold text-[#f8efe4]">
+                                {clientSessions[0]?.title || selectedClient.nextWorkout || 'Not scheduled'}
+                            </p>
                         </div>
 
                         <div className="mt-5 rounded-[24px] bg-[rgba(121,76,89,0.24)] px-4 py-4">
@@ -69,10 +79,37 @@ const TrainerClientDetailsView = ({ onBack, onOpenProfile, onAssignWorkout, onRe
                         </div>
                     </div>
 
-                    <SectionCard title="Workouts">
-                        <p className="text-sm leading-relaxed text-[#f3e8dc]">
-                            {selectedClient.note}
-                        </p>
+                    <SectionCard title="Workout History">
+                        <div className="space-y-3">
+                            {clientSessions.length > 0 ? (
+                                clientSessions.map((session) => (
+                                    <div key={session.id} className="rounded-[22px] border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.06]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex gap-3">
+                                                <div className="mt-1 text-[#dce8c5]">
+                                                    <FiCalendar size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-[#f8efe4]">{session.title}</p>
+                                                    <p className="text-xs text-[#d7cabc] mt-1">
+                                                        {new Date(session.startsAt).toLocaleDateString('ru-RU')} • {new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full ${
+                                                session.status === 'COMPLETED' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/60'
+                                            }`}>
+                                                {session.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm leading-relaxed text-[#f3e8dc]/50 italic py-4 text-center">
+                                    No workout history found for this client.
+                                </p>
+                            )}
+                        </div>
                     </SectionCard>
                 </div>
 

@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+// 1. Добавляем useEffect в импорт из 'react'
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiSearch, FiX } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
-import useStore from '../../store/useStore'; // Импортируем стор
+import useStore from '../../store/useStore';
 
 const Trainers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const navigate = useNavigate();
 
-    // Достаем данные и экшен из стора
-    const { trainers, setSelectedTrainer } = useStore();
+    const { trainers, setSelectedTrainer, fetchTrainers } = useStore();
 
-    // Фильтрация работает с данными из стора
+    useEffect(() => {
+        fetchTrainers();
+    }, [fetchTrainers]); // fetchTrainers в зависимостях — это хорошая практика
+
     const filteredTrainers = trainers.filter(trainer =>
         `${trainer.name} ${trainer.surname}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -25,7 +28,6 @@ const Trainers = () => {
     return (
         <Background>
             <div className="relative min-h-screen text-white font-rubik flex flex-col overflow-y-auto no-scrollbar">
-
                 {/* HEADER */}
                 <nav className="relative z-30 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between shrink-0">
                     <button
@@ -74,8 +76,8 @@ const Trainers = () => {
                                 <div
                                     key={trainer.id}
                                     onClick={() => {
-                                        setSelectedTrainer(trainer); // Обновляем глобальный стейт
-                                        navigate('/trainer-profile'); // Переходим в профиль
+                                        setSelectedTrainer(trainer);
+                                        navigate('/trainer-profile');
                                     }}
                                     className="relative flex-none w-[80vw] sm:w-[60%] md:w-[320px] aspect-[3/4] md:aspect-[4/5]
                                                rounded-[40px] overflow-hidden snap-center

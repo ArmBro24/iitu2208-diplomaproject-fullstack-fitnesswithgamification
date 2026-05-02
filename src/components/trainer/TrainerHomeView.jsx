@@ -1,20 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { FiArrowRight, FiChevronRight, FiUser } from 'react-icons/fi';
 import { WorkoutCard } from './TrainerShared.jsx';
+import useStore from '../../store/useStore';
 
 const TrainerHomeView = ({
-    clients,
-    assignedWorkouts,
-    keyMetrics,
-    onOpenClients,
-    onOpenSchedule,
-    onOpenProfile,
-    selectedClient,
-    setSelectedClientId,
-}) => {
+                             assignedWorkouts = [],
+                             keyMetrics = [],
+                             onOpenClients,
+                             onOpenSchedule,
+                             onOpenProfile,
+                             selectedClient,
+                             setSelectedClientId,
+                         }) => {
+    const { clients, fetchMyClients, currentUser } = useStore();
+    const currentCoachId = currentUser?.id;
+
+    useEffect(() => {
+        if (currentCoachId) {
+            fetchMyClients(currentCoachId);
+        }
+    }, [fetchMyClients, currentCoachId]);
+
     const todaySchedule = assignedWorkouts.slice(0, 4);
 
     const attentionClients = useMemo(() => {
+        if (!clients) return [];
+
         const priorityClients = clients.filter((client) =>
             client.progressRequestPending ||
             client.status === 'Needs review' ||

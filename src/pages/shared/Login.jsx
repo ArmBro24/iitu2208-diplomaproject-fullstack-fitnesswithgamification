@@ -5,8 +5,10 @@ import bgMobile from '../../assets/login_back_mob.jpg';
 import bgDesktop from '../../assets/login_back_desk.jpg';
 import api from '../../utils/api';
 import { setActiveRole } from '../../utils/roleRouting.js';
+import useStore from '../../store/useStore';
 
 const Login = ({ onLogin }) => {
+    const { setCurrentUser } = useStore();
     const [isLoaded, setIsLoaded] = useState(false);
     const [email, setEmail] = useState('');
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ const Login = ({ onLogin }) => {
         const password = e.target.querySelector('input[type="password"]').value;
         const normalizedEmail = email.trim().toLowerCase();
 
+        // Демо-данные для входа без бэкенда
         if (normalizedEmail === 'trainer@gmail.com') {
             setActiveRole('trainer');
             onLogin(email);
@@ -51,17 +54,27 @@ const Login = ({ onLogin }) => {
             });
 
             if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+
+                const userId = response.data.id || response.data.userId;
                 const userRole = response.data.role.toLowerCase();
+
+                setCurrentUser({
+                    id: userId,
+                    role: userRole,
+                    email: email
+                });
+
+                if (userId) {
+                    localStorage.setItem('userId', userId);
+                }
+
                 setActiveRole(userRole);
                 onLogin(email);
 
-                if (userRole === 'coach') {
-                    navigate('/trainer/dashboard');
-                } else if (userRole === 'admin') {
-                    navigate('/admin/dashboard');
-                } else {
-                    navigate('/home');
-                }
+                if (userRole === 'coach') navigate('/trainer/dashboard');
+                else if (userRole === 'admin') navigate('/admin/dashboard');
+                else if (userRole === 'member') navigate('/home');
             }
         } catch (error) {
             console.error('Login error:', error);

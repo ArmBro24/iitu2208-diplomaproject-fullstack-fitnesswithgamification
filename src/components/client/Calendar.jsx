@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import useStore from '../../store/useStore';
 
 const Calendar = ({ isEdge, onDateClick }) => {
     const [tooltipDay, setTooltipDay] = useState(null);
+
+    const sessions = useStore((state) => state.sessions);
 
     const now = new Date();
     const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -16,39 +19,51 @@ const Calendar = ({ isEdge, onDateClick }) => {
     const days = Array.from({ length: lastDay }, (_, i) => i + 1);
     const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
 
+    const getSessionForDay = (day) => {
+        return sessions.find(s => {
+            const d = new Date(s.startsAt);
+            return d.getDate() === day &&
+                d.getMonth() === now.getMonth() &&
+                d.getFullYear() === now.getFullYear();
+        });
+    };
+
     const getStatus = (day) => {
+        const session = getSessionForDay(day);
         if (day === now.getDate()) return 'today';
-        if (day < now.getDate()) {
-            return day % 3 === 0 ? 'missed' : 'attended';
-        }
-        return day % 5 === 0 ? 'upcoming' : 'normal';
+        if (!session) return 'normal';
+
+        if (session.status === 'CONFIRMED' || session.status === 'COMPLETED') return 'attended';
+        if (session.status === 'REQUESTED') return 'upcoming';
+        if (session.status === 'MISSED') return 'missed';
+
+        return 'upcoming';
     };
 
     const handleDayClick = (day) => {
-        const status = getStatus(day);
-        if (status === 'normal') {
+        const session = getSessionForDay(day);
+
+        if (!session) {
             setTooltipDay(day);
             setTimeout(() => setTooltipDay(null), 2000);
             return;
         }
 
-        const mockTrainingData = {
-            status: status === 'today' ? 'upcoming' : status,
-            date: `${currentMonth} ${day}, ${currentYear}`,
-            time: '13:00 - 14:00',
-            title: 'Full Body Strength',
+        const formattedData = {
+            id: session.id,
+            status: day === now.getDate() ? 'today' : session.status.toLowerCase(),
+            date: new Date(session.startsAt).toLocaleDateString('en-US', {
+                month: 'long', day: 'numeric', year: 'numeric'
+            }),
+            time: `${new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(session.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            title: session.title,
             exercises: [
-                { name: 'push-ups', planned: 20, done: status === 'attended' ? 20 : 0 },
-                { name: 'squats', planned: 30, done: status === 'attended' ? 28 : 0 },
-                { name: 'plank', planned: 60, done: status === 'attended' ? 60 : 0 },
-                { name: 'lunges', planned: 50, done: status === 'attended' ? 50 : 0 },
-                { name: 'sit-ups', planned: 20, done: status === 'attended' ? 20 : 0 },
-                { name: 'burpees', planned: 25, done: status === 'attended' ? 25 : 0 },
+                { name: 'Main Quest', planned: 1, done: session.status === 'COMPLETED' ? 1 : 0 }
             ],
-            points: { total: 12, endurance: 4, consistency: 3, motivation: 5 }
+            points: { total: 10, endurance: 2, consistency: 5, motivation: 3 }
         };
 
-        if (onDateClick) onDateClick(mockTrainingData);
+        if (onDateClick) onDateClick(formattedData);
     };
 
     return (
@@ -76,7 +91,6 @@ const Calendar = ({ isEdge, onDateClick }) => {
                             onClick={() => handleDayClick(day)}
                             className="relative flex justify-center items-center h-10 w-full cursor-pointer hover:scale-110 transition-transform group"
                         >
-                            {/* ПУНКТ 7: Тултип стал крупнее (text-sm вместо text-xs) */}
                             {tooltipDay === day && (
                                 <span className="absolute bottom-full mb-3 bg-[#c1cf98] text-[#1a120d] text-sm md:text-base font-bold px-4 py-2 rounded-xl animate-bounce shadow-2xl z-50 whitespace-nowrap">
                                     No workout scheduled

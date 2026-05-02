@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMenu, FiUser, FiX, FiLogOut } from 'react-icons/fi';
 import Calendar from '../../components/client/Calendar.jsx';
@@ -9,6 +9,15 @@ import homeImg from '../../assets/home.png';
 import useStore from '../../store/useStore';
 
 const ClientHome = () => {
+    const fetchSessions = useStore((state) => state.fetchSessions);
+    const userId = useStore((state) => state.currentUser.id);
+    const sessions = useStore((state) => state.sessions);
+    useEffect(() => {
+        if (userId) {
+            fetchSessions(userId);
+        }
+    }, [userId]);
+
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -183,6 +192,7 @@ const ClientHome = () => {
                         <div className="w-[85%] md:w-full overflow-hidden">
                             <Calendar
                                 isEdge={true}
+                                trainings={sessions}
                                 onDateClick={(trainingData) => {
                                     setSelectedTraining(trainingData);
                                     navigate('/training');

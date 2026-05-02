@@ -1,3 +1,4 @@
+import useStore from '../../store/useStore';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TrainerClientsView from '../../components/trainer/TrainerClientsView.jsx';
@@ -21,9 +22,21 @@ const TRAINER_STORAGE_KEY = 'herofit-trainer-dashboard';
 
 const Trainers = ({ onLogout }) => {
     const navigate = useNavigate();
+    const { clients: storeClients, fetchMyClients, createTraining, fetchSessions, sessions, currentUser } = useStore();
+    const currentCoachId = currentUser?.id;
+
     const [view, setView] = useState('dashboard');
     const [clientsSubView, setClientsSubView] = useState(() => readStoredState().clientsSubView ?? 'list');
-    const [clients, setClients] = useState(() => readStoredState().clients ?? initialClients);
+
+    const [localClients, setLocalClients] = useState(() => readStoredState().clients ?? initialClients);
+
+    const clients = useMemo(() => {
+        return (storeClients && storeClients.length > 0) ? storeClients : localClients;
+    }, [storeClients, localClients]);
+
+    const setClients = React.useCallback((val) => {
+        setLocalClients(val);
+    }, []);
     const [assignedWorkouts, setAssignedWorkouts] = useState(() => readStoredState().assignedWorkouts ?? initialAssignedWorkouts);
     const [scheduleItems, setScheduleItems] = useState(() => readStoredState().scheduleItems ?? initialScheduleItems);
     const [selectedClientId, setSelectedClientId] = useState(() => readStoredState().selectedClientId ?? initialClients[0].id);
@@ -37,6 +50,18 @@ const Trainers = ({ onLogout }) => {
         setActiveRole('trainer');
     }, []);
 
+    useEffect(() => {
+        if (currentCoachId) {
+            fetchMyClients(currentCoachId);
+        }
+    }, [currentCoachId, fetchMyClients]);
+
+    useEffect(() => {
+        if (selectedClientId) {
+            fetchSessions(selectedClientId);
+        }
+    }, [selectedClientId, fetchSessions]);
+
     const keyMetrics = useMemo(() => {
         const missedWorkouts = scheduleItems.filter((item) => item.status === 'missed').length;
         const pendingUpdates = clients.filter((item) => item.progressRequestPending).length;
@@ -49,47 +74,30 @@ const Trainers = ({ onLogout }) => {
         ];
     }, [clients, scheduleItems]);
 
-    const handleAssignWorkout = ({ clientId, workout, timeSlot }) => {
-        const client = clients.find((item) => item.id === clientId);
-        if (!client) return;
+    const handleAssignWorkout = async (data) => {
+        try {
+            await createTraining({
+                coachId: currentCoachId,
+                memberId: data.clientId,
+                title: data.workout,
+                startsAt: data.startsAt,
+                endsAt: data.endsAt
+            });
 
-        const scheduleLabel = `${timeSlot}`;
+            setClients((currentClients) =>
+                currentClients.map((item) =>
+                    item.id === data.clientId
+                        ? { ...item, nextWorkout: data.workout, status: 'On track' }
+                        : item
+                )
+            );
 
-        setClients((currentClients) =>
-            currentClients.map((item) =>
-                item.id === clientId
-                    ? {
-                        ...item,
-                        nextWorkout: workout,
-                        status: 'On track',
-                    }
-                    : item
-            )
-        );
+            setView('schedule');
 
-        setAssignedWorkouts((current) => [
-            {
-                id: Date.now(),
-                client: client.name,
-                workout,
-                time: scheduleLabel,
-                status: 'upcoming',
-            },
-            ...current,
-        ]);
-
-        setScheduleItems((current) => [
-            {
-                id: Date.now() + 1,
-                name: workout,
-                client: client.name,
-                time: scheduleLabel,
-                status: 'upcoming',
-            },
-            ...current,
-        ]);
-
-        setView('schedule');
+        } catch (error) {
+            console.error("Failed to assign workout:", error);
+            alert("Ошибка при сохранении тренировки на сервере.");
+        }
     };
 
     const handleAttendanceStatusChange = (sessionId, nextStatus) => {
@@ -256,6 +264,7 @@ const Trainers = ({ onLogout }) => {
                                     onAssignWorkout={openAssignWorkout}
                                     onRequestProgressUpdate={handleRequestProgressUpdate}
                                     selectedClient={selectedClient}
+                                    clientSessions={sessions}
                                 />
                             )}
 
