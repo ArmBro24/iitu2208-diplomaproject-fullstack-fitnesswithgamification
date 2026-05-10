@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @Table(name = "\"users\"")
 @Builder(toBuilder = true)
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,9 +28,13 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "coach_id")
-    private Long coachId;
+    private String firstName;
+    private String lastName;
+    private String nickname;
+    private String phone;
+    private String gender;
+    private java.time.LocalDate birthDate;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private java.time.LocalDateTime createdAt;
+    private java.time.LocalDateTime updatedAt;
 }

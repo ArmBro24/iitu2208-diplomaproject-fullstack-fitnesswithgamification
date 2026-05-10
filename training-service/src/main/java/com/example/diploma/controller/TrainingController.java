@@ -1,8 +1,7 @@
 package com.example.diploma.controller;
 
-import com.example.diploma.controller.dto.ApproveLogRequest;
-import com.example.diploma.controller.dto.CreateSessionRequest;
-import com.example.diploma.controller.dto.SubmitLogRequest;
+import com.example.diploma.controller.dto.*;
+import com.example.diploma.model.Exercise;
 import com.example.diploma.model.SessionLog;
 import com.example.diploma.model.TrainingSession;
 import com.example.diploma.model.enums.TrainingSessionStatus;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,22 +22,39 @@ public class TrainingController {
     private final TrainingSessionService trainingSessionService;
 
     @GetMapping("/sessions/member/{memberId}")
-    public List<TrainingSession> getMemberSessions(@PathVariable Long memberId) {
-        return trainingSessionService.getSessionsByMemberId(memberId);
+    public List<TrainingSessionDto> getMemberSessions(@PathVariable Long memberId) {
+        return trainingSessionService.getSessionsByMemberId(memberId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
-    public TrainingSession createSession(@RequestBody @Valid CreateSessionRequest req) {
+    public TrainingSessionDto createSession(@RequestBody @Valid CreateSessionRequest req) {
         TrainingSession session = TrainingSession.builder()
                 .coachId(req.coachId())
                 .memberId(req.memberId())
                 .title(req.title())
                 .startsAt(req.startsAt())
                 .endsAt(req.endsAt())
+                .type(req.type())
+                .points(req.points())
                 .build();
 
-        return trainingSessionService.createSession(session);
+        if (req.exercises() != null) {
+            List<Exercise> exercises = req.exercises().stream()
+                    .map(dto -> Exercise.builder()
+                            .name(dto.name())
+                            .planned(dto.planned())
+                            .done(0)
+                            .session(session)
+                            .build())
+                    .collect(Collectors.toList());
+            session.setExercises(exercises);
+        }
+
+        TrainingSession saved = trainingSessionService.createSession(session);
+        return mapToDto(saved);
     }
 
     @PostMapping("/logs")
@@ -60,8 +77,37 @@ public class TrainingController {
     }
 
     @PatchMapping("/sessions/{sessionId}/status")
-    public TrainingSession updateStatus(@PathVariable Long sessionId,
-                                        @RequestParam TrainingSessionStatus status) {
-        return trainingSessionService.updateSessionStatus(sessionId, status);
+    public TrainingSessionDto updateStatus(@PathVariable Long sessionId,
+                                           @RequestParam TrainingSessionStatus status) {
+        TrainingSession updated = trainingSessionService.updateSessionStatus(sessionId, status);
+        return mapToDto(updated);
+    }
+
+    private TrainingSessionDto mapToDto(TrainingSession s) {
+        List<ExerciseDto> exerciseDtos = s.getExercises() == null ? List.of() :
+                s.getExercises().stream()
+                        .map(e -> new ExerciseDto(e.getId(), e.getName(), e.getPlanned(), e.getDone()))
+                        .collect(Collectors.toList());
+
+        int total = s.getPoints() != null ? s.getPoints() :
+                (s.getType() != null ? s.getType().getDefaultPoints() : 0);
+
+        int endurance = (int) (total * 0.4);
+        int consistency = (int) (total * 0.3);
+        int motivation = total - endurance - consistency;
+
+        PointsDto pointsDto = new PointsDto(total, endurance, consistency, motivation);
+
+        return new TrainingSessionDto(
+                s.getId(),
+                s.getCoachId(),
+                s.getMemberId(),
+                s.getTitle(),
+                s.getStartsAt(),
+                s.getEndsAt(),
+                s.getStatus(),
+                pointsDto,
+                exerciseDtos
+        );
     }
 }

@@ -30,16 +30,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (auth != null && auth.startsWith("Bearer ")) {
             String token = auth.substring(7);
+            try {
+                Claims claims = jwtService.parse(token);
+                String email = claims.getSubject();
+                Object roleObj = claims.get("role"); // Смотрим, что там реально лежит
 
-            Claims claims = jwtService.parse(token);
+                System.out.println("JWT Filter - Email: " + email + ", Raw Role from Token: " + roleObj);
 
-            String email = claims.getSubject(); // у тебя subject = email
-            String role = String.valueOf(claims.get("role")); // "ADMIN"/"COACH"/"MEMBER"
+                if (roleObj != null) {
+                    String role = String.valueOf(roleObj);
+                    // Проверка: если в токене уже есть ROLE_, не добавляем второй раз
+                    String finalRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
 
-            var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                    var authorities = List.of(new SimpleGrantedAuthority(finalRole));
+                    var authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            var authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                    System.out.println("JWT Filter - Authorities set: " + authorities);
+                }
+            } catch (Exception e) {
+                System.err.println("JWT Filter - Error parsing token: " + e.getMessage());
+            }
         }
 
         filterChain.doFilter(request, response);

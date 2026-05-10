@@ -1,6 +1,7 @@
 package com.example.auth_service.service.impl;
 
 import com.example.auth_service.controller.dto.AuthResponse;
+import com.example.auth_service.controller.dto.RegisterRequest; // Добавили импорт
 import com.example.auth_service.model.entity.User;
 import com.example.auth_service.model.enums.Role;
 import com.example.auth_service.repository.UserRepository;
@@ -21,20 +22,24 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
 
     @Override
-    public AuthResponse register(String email, String password, String role) {
+    public AuthResponse register(RegisterRequest request) {
 
-        boolean exists = userRepository.findAll().stream()
-                .anyMatch(u -> u.getEmail().equalsIgnoreCase(email));
-
-        if (exists) {
+        userRepository.findByEmail(request.email()).ifPresent(u -> {
             throw new IllegalStateException("User already exists");
-        }
+        });
 
         User user = User.builder()
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .role(role != null ? Role.valueOf(role.toUpperCase()) : Role.MEMBER)
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .role(Role.valueOf(request.role()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .nickname(request.nickname())
+                .phone(request.phone())
+                .gender(request.gender())
+                .birthDate(request.birthDate())
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         User saved = userRepository.save(user);
@@ -46,10 +51,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(String email, String password) {
-
-        User user = userRepository.findAll().stream()
-                .filter(u -> u.getEmail().equalsIgnoreCase(email))
-                .findFirst()
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

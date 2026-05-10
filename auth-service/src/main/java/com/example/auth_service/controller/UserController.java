@@ -20,17 +20,9 @@ public class UserController {
         return userRepository.findAllByRole(Role.COACH);
     }
 
-    @GetMapping("/my-clients/{coachId}")
-    public List<User> getMyClients(@PathVariable Long coachId) {
-        return userRepository.findAllByCoachId(coachId);
-    }
-
-    @PutMapping("/{clientId}/assign-coach/{coachId}")
-    public User assignCoach(@PathVariable Long clientId, @PathVariable Long coachId) {
-        User client = userRepository.findById(clientId)
-                .orElseThrow(() -> new RuntimeException("Client not found"));
-
-        client.setCoachId(coachId);
-        return userRepository.save(client);
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 }

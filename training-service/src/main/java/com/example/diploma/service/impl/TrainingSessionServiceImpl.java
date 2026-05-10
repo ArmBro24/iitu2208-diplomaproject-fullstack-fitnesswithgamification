@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List; // Не забудьте этот импорт
+import java.util.List;
 
 @Slf4j
 @Service
@@ -25,30 +25,41 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     private final SessionLogRepository sessionLogRepository;
     private final TrainingEventProducer trainingEventProducer;
 
-    // --- Новый метод ---
     @Override
     public List<TrainingSession> getSessionsByMemberId(Long memberId) {
         log.info("Fetching sessions for memberId: {}", memberId);
         return trainingSessionRepository.findAllByMemberId(memberId);
     }
-    // -------------------
 
     @Override
     public TrainingSession createSession(TrainingSession session) {
+        int finalPoints = session.getPoints() != null ? session.getPoints() :
+                (session.getType() != null ? session.getType().getDefaultPoints() : 20);
+
         TrainingSession entity = session.toBuilder()
                 .status(TrainingSessionStatus.REQUESTED)
+                .points(finalPoints)
                 .build();
+
+        if (session.getExercises() != null) {
+            session.getExercises().forEach(ex -> ex.setSession(entity));
+            entity.setExercises(session.getExercises());
+        }
 
         return trainingSessionRepository.save(entity);
     }
 
     @Override
-    public SessionLog submitLog(SessionLog log) {
-        SessionLog entity = log.toBuilder()
+    public SessionLog submitLog(SessionLog sessionLog) {
+        TrainingSession session = trainingSessionRepository.findById(sessionLog.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+
+        SessionLog entity = sessionLog.toBuilder()
                 .status(SessionLogStatus.SUBMITTED)
                 .submittedAt(LocalDateTime.now())
                 .build();
 
+        log.info("User {} submitted results for session {}", sessionLog.getMemberId(), sessionLog.getSessionId());
         return sessionLogRepository.save(entity);
     }
 
@@ -59,14 +70,15 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
         if (existing.getStatus() != SessionLogStatus.SUBMITTED &&
                 existing.getStatus() != SessionLogStatus.REVISED) {
-            throw new IllegalStateException(
-                    "Log cannot be approved. Current status: " + existing.getStatus()
-            );
+            throw new IllegalStateException("Log cannot be approved. Current status: " + existing.getStatus());
         }
 
+        int finalPoints = (points != null) ? points : -10;
+
         SessionLog updated = existing.toBuilder()
-                .status(SessionLogStatus.APPROVED)
-                .pointsAwarded(points)
+                // Если баллы положительные — APPROVED, если отрицательные или 0 — REJECTED
+                .status(finalPoints > 0 ? SessionLogStatus.APPROVED : SessionLogStatus.REJECTED)
+                .pointsAwarded(finalPoints)
                 .coachComment(coachComment)
                 .reviewedAt(LocalDateTime.now())
                 .build();
@@ -82,6 +94,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                 )
         );
 
+        log.info("Log {} processed with status {} and points {}", logId, saved.getStatus(), finalPoints);
         return saved;
     }
 

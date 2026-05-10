@@ -1,10 +1,12 @@
 package com.example.diploma.model;
 
 import com.example.diploma.model.enums.TrainingSessionStatus;
+import com.example.diploma.model.enums.TrainingType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -37,4 +39,20 @@ public class TrainingSession {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TrainingSessionStatus status;
+
+    @Column(nullable = false)
+    private Integer points;
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Exercise> exercises;
+
+    public void setExercises(List<Exercise> exercises) {
+        this.exercises = exercises;
+        if (exercises != null) {
+            exercises.forEach(exercise -> exercise.setSession(this));
+        }
+    }
+
+    @Enumerated(EnumType.STRING)
+    private TrainingType type;
 }

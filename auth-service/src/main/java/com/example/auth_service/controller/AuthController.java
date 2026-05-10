@@ -3,8 +3,6 @@ package com.example.auth_service.controller;
 import com.example.auth_service.controller.dto.AuthResponse;
 import com.example.auth_service.controller.dto.LoginRequest;
 import com.example.auth_service.controller.dto.RegisterRequest;
-import com.example.auth_service.controller.dto.LoginRequest;
-import com.example.auth_service.controller.dto.RegisterRequest;
 import com.example.auth_service.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,7 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@RequestBody @Valid RegisterRequest req) {
-        return authService.register(req.email(), req.password(), req.role());
+        return authService.register(req);
     }
 
     @PostMapping("/login")
