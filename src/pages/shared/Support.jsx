@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCopy } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
+import TrainerDrawer from '../../components/trainer/TrainerDrawer.jsx';
+import { createTrainerNavItems } from '../../components/trainer/trainerNavigation.js';
 import supportImg from '../../assets/support.png';
-import { getSharedBackPath } from '../../utils/roleRouting.js';
+import { getActiveRole, getSharedBackPath } from '../../utils/roleRouting.js';
 
 const phoneNumbers = [
     '+7 (777) 777 77 77',
@@ -14,8 +16,29 @@ const phoneNumbers = [
 
 const Support = () => {
     const [copiedId, setCopiedId] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const navigate = useNavigate();
-    const backPath = getSharedBackPath();
+    const location = useLocation();
+    const backPath = location.state?.backPath ?? getSharedBackPath();
+    const activeRole = getActiveRole();
+    const isTrainerMode = activeRole === 'coach' || activeRole === 'trainer' || backPath === '/trainer/dashboard';
+
+    const closeSidebar = () => setIsSidebarOpen(false);
+    const navigateFromSidebar = (path, state) => {
+        navigate(path, state ? { state } : undefined);
+        closeSidebar();
+    };
+
+    const trainerNavItems = createTrainerNavItems({
+        activeView: 'support',
+        onDashboard: () => navigateFromSidebar('/trainer/dashboard'),
+        onClients: () => navigateFromSidebar('/trainer/dashboard', { trainerView: 'clients' }),
+        onSchedule: () => navigateFromSidebar('/trainer/dashboard', { trainerView: 'schedule' }),
+        onEvents: () => navigateFromSidebar('/events', { backPath: '/trainer/dashboard' }),
+        onAttendance: () => navigateFromSidebar('/trainer/dashboard', { trainerView: 'attendance' }),
+        onProfile: () => navigateFromSidebar('/trainer/dashboard', { trainerView: 'profile' }),
+        onSupport: closeSidebar,
+    });
 
     const copyToClipboard = (text, index) => {
         navigator.clipboard.writeText(text);
@@ -31,10 +54,21 @@ const Support = () => {
                     <div className="absolute inset-0 bg-black/45" />
                 </div>
 
-                <nav className="relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8">
+                {isTrainerMode && (
+                    <TrainerDrawer
+                        isOpen={isSidebarOpen}
+                        items={trainerNavItems}
+                        onClose={closeSidebar}
+                        onOpen={() => setIsSidebarOpen(true)}
+                        onLogout={() => navigateFromSidebar('/login')}
+                    />
+                )}
+
+                <nav className={`relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'md:pl-24' : ''}`}>
                     <button
                         onClick={() => navigate(backPath)}
-                        className="rounded-xl bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 md:rounded-2xl md:p-3 md:text-3xl"
+                        aria-label="Back"
+                        className="rounded-xl border border-white/10 bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 active:scale-95 md:rounded-2xl md:p-3 md:text-3xl"
                     >
                         <FiArrowLeft className="text-yellow-100/80"/>
                     </button>

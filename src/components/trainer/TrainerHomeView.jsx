@@ -1,7 +1,8 @@
 import React, { useMemo, useEffect } from 'react';
-import { FiArrowRight, FiChevronRight, FiUser } from 'react-icons/fi';
+import { FiArrowRight, FiChevronRight, FiMessageCircle, FiUser } from 'react-icons/fi';
 import { WorkoutCard } from './TrainerShared.jsx';
 import useStore from '../../store/useStore';
+import aiChatImg from '../../assets/ai_chat_ill.png';
 
 const TrainerHomeView = ({
                              assignedWorkouts = [],
@@ -9,6 +10,7 @@ const TrainerHomeView = ({
                              onOpenClients,
                              onOpenSchedule,
                              onOpenProfile,
+                             onOpenAIChat,
                              selectedClient,
                              setSelectedClientId,
                          }) => {
@@ -137,6 +139,35 @@ const TrainerHomeView = ({
                             </div>
                         </DashboardCard>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={onOpenAIChat}
+                        className="mt-4 flex w-full items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-white/[0.05] p-5 text-left shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition-all hover:border-[#c1cf98]/45 hover:bg-white/[0.08] active:scale-[0.99] md:px-6"
+                    >
+                        <div className="flex min-w-0 items-center gap-4">
+                            <div className="hidden h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-[#4087a1]/20 md:flex">
+                                <img src={aiChatImg} alt="AI Chat" className="h-16 w-16 object-contain" />
+                            </div>
+
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <FiMessageCircle className="text-[#c1cf98]" size={18} />
+                                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-white/45">Ai Chat</p>
+                                </div>
+                                <h3 className="mt-2 font-rubik text-[1.35rem] font-bold text-[#f5efe7] md:text-[1.55rem]">
+                                    Training assistant
+                                </h3>
+                                <p className="mt-1 max-w-[620px] text-sm leading-relaxed text-white/55">
+                                    Ask for workout ideas, recovery notes, nutrition tips, or quick coaching explanations.
+                                </p>
+                            </div>
+                        </div>
+
+                        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c1cf98]/30 bg-[#c1cf98]/10 text-[#eaf2cf]">
+                            <FiArrowRight size={18} />
+                        </span>
+                    </button>
 
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiX, FiInfo, FiAlertTriangle, FiCheckCircle, FiRotateCcw } from 'react-icons/fi';
 import challengeBg from '../../assets/challenge.png'; // Возвращаем ваш фон
+import Background from '../../components/common/Background.jsx';
 import useStore from '../../store/useStore';
 
 const Challenges = () => {
@@ -35,10 +36,11 @@ const Challenges = () => {
     };
 
     return (
-        <div
-            className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat fixed inset-0 overflow-hidden"
-            style={{ backgroundImage: `url(${challengeBg})` }}
-        >
+        <Background>
+            <div
+                className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat overflow-hidden"
+                style={{ backgroundImage: `url(${challengeBg})` }}
+            >
             {/* Оригинальный Overlay с блюром */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-0" />
 
@@ -209,7 +211,8 @@ const Challenges = () => {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </Background>
     );
 };
 

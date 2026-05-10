@@ -13,13 +13,13 @@ export const getActiveRole = () => {
 
 export const getRoleHomePath = (role = getActiveRole()) => {
     // Исправляем условия под значения из бэкенда
-    if (role === 'coach') return '/trainer/dashboard';
+    if (role === 'coach' || role === 'trainer') return '/trainer/dashboard';
     if (role === 'admin') return '/admin/dashboard';
     return '/home'; // Для 'member' и остальных
 };
 
 export const getSharedBackPath = (role = getActiveRole()) => {
-    if (role === 'coach') return '/trainer/dashboard';
+    if (role === 'coach' || role === 'trainer') return '/trainer/dashboard';
     if (role === 'admin') return '/admin/dashboard';
     return '/menu';
 };

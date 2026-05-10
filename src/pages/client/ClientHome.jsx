@@ -103,7 +103,7 @@ const ClientHome = () => {
 
                     {/* Декор (только мобилка) */}
                     <div className="[grid-area:decor] md:hidden block">
-                        <div className="w-[85%] h-64 overflow-hidden rounded-tr-[100px] rounded-br-[100px] shadow-2xl">
+                        <div className="w-[85%] h-64 overflow-hidden rounded-tr-[100px] rounded-br-[100px] border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
                             <img src={homeImg} alt="Home" className="w-full h-full object-cover"/>
                         </div>
                     </div>
@@ -120,7 +120,7 @@ const ClientHome = () => {
                         {/* Картинка остается прижатой влево (без отступа) */}
                         <div
                             onClick={() => navigate('/trainers')}
-                            className="w-full h-full md:h-fit md:max-w-[340px] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-[120px] overflow-hidden shadow-2xl relative border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300 cursor-pointer"
+                            className="w-full h-full md:h-fit md:max-w-[340px] rounded-tr-[80px] rounded-br-[80px] md:rounded-tr-[120px] md:rounded-br-[120px] overflow-hidden shadow-[0_18px_45px_rgba(0,0,0,0.25)] relative border border-white/10 hover:border-[#c1cf98]/70 active:border-[#c1cf98] transition-all duration-300 cursor-pointer"
                         >
                             <img
                                 src={coachesImg}
@@ -130,7 +130,7 @@ const ClientHome = () => {
                         </div>
 
                         {/* Новое предложение под картинкой: отступ только здесь */}
-                        <div className="hidden md:block mt-6 md:pl-10">
+                        <div className="hidden md:block mt-6 md:ml-10 rounded-[26px] border border-white/10 bg-black/15 px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
                             <p className="text-[#c1cf98] md:text-lg lg:text-[21px] leading-tight font-medium">
                                 Unlock professional guidance and choose your mentor to reach new heights.
                             </p>
@@ -141,7 +141,7 @@ const ClientHome = () => {
                     <div className="md:contents [grid-area:content] flex flex-col h-full">
 
                         {/* Блок с текстом: на мобилке h-full + justify-between разносит предложения, на десктопе возвращаем стандарт */}
-                        <div className="md:[grid-area:text1] px-2 md:pl-8 md:pr-12 py-2 md:pt-2 flex flex-col justify-between h-full md:h-auto md:block md:space-y-4">
+                        <div className="md:[grid-area:text1] px-2 md:ml-8 md:mr-12 py-2 md:p-5 flex flex-col justify-between h-full md:h-auto md:block md:space-y-4 md:rounded-[28px] md:border md:border-white/10 md:bg-black/15 md:shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
 
                             {/* Это предложение на мобилке сверху, на десктопе просто первый абзац */}
                             <div className="block">
@@ -171,7 +171,7 @@ const ClientHome = () => {
                         <div className="md:[grid-area:plans] flex items-stretch justify-end mt-auto md:mt-0 md:pb-6 md:min-h-0">
                             <div
                                 onClick={() => navigate('/subscription')}
-                                className="w-full md:w-[400px] h-36 md:h-60 lg:h-64 rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-2xl relative border-2 border-transparent cursor-pointer hover:border-[#c1cf98] active:border-[#c1cf98] transition-all duration-300 group"
+                                className="w-full md:w-[400px] h-36 md:h-60 lg:h-64 rounded-l-[50px] md:rounded-l-[100px] md:rounded-r-none overflow-hidden shadow-[0_18px_45px_rgba(0,0,0,0.25)] relative border border-white/10 cursor-pointer hover:border-[#c1cf98]/70 active:border-[#c1cf98] transition-all duration-300 group"
                             >
                                 <img src={plansImg} alt="Plans"
                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
@@ -179,7 +179,7 @@ const ClientHome = () => {
                         </div>
 
                         {/* Текст (только десктоп) - без изменений */}
-                        <div className="hidden md:flex md:[grid-area:text2] px-2 md:pl-8 md:pr-10 py-4 md:items-start md:min-h-0">
+                        <div className="hidden md:flex md:[grid-area:text2] md:ml-8 md:mr-10 px-5 py-4 md:items-start md:min-h-0 rounded-[28px] border border-white/10 bg-black/15 shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
                             <p className="text-[#c1cf98] text-[18px] md:text-lg lg:text-[21px] leading-tight font-medium w-full max-w-none">
                                 Your fitness journey is now an adventure! Join a community, participate in raids, and prove your strength.
                                 <span className="hidden md:inline"> Dive into a world of seamless gamification where your daily activity fuels the growth of your digital avatar.</span>
@@ -189,7 +189,7 @@ const ClientHome = () => {
 
                     {/* Календарь */}
                     <div className="[grid-area:calendar] flex items-end mt-4 md:mt-0 md:min-h-0">
-                        <div className="w-[85%] md:w-full overflow-hidden">
+                        <div className="w-[85%] md:w-full overflow-hidden rounded-tr-[40px] md:rounded-tl-[80px] border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
                             <Calendar
                                 isEdge={true}
                                 trainings={sessions}

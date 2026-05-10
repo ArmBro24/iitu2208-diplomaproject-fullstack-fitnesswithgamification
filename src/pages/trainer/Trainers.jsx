@@ -1,6 +1,6 @@
 import useStore from '../../store/useStore';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import TrainerClientsView from '../../components/trainer/TrainerClientsView.jsx';
 import TrainerAssignWorkoutView from '../../components/trainer/TrainerAssignWorkoutView.jsx';
 import TrainerAttendanceView from '../../components/trainer/TrainerAttendanceView.jsx';
@@ -8,6 +8,9 @@ import TrainerClientDetailsView from '../../components/trainer/TrainerClientDeta
 import TrainerHomeView from '../../components/trainer/TrainerHomeView.jsx';
 import TrainerProfileView from '../../components/trainer/TrainerProfileView.jsx';
 import TrainerScheduleView from '../../components/trainer/TrainerScheduleView.jsx';
+import TrainerDrawer from '../../components/trainer/TrainerDrawer.jsx';
+import { createTrainerNavItems } from '../../components/trainer/trainerNavigation.js';
+import AIChat from '../../components/ai/AIChat.jsx';
 import {
     grainGradient,
     initialAssignedWorkouts,
@@ -15,17 +18,19 @@ import {
     initialScheduleItems,
     noiseStyle
 } from '../../components/trainer/trainerData.js';
-import { DesktopNavButton } from '../../components/trainer/TrainerShared.jsx';
 import { setActiveRole } from '../../utils/roleRouting.js';
 
 const TRAINER_STORAGE_KEY = 'herofit-trainer-dashboard';
 
 const Trainers = ({ onLogout }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { clients: storeClients, fetchMyClients, createTraining, fetchSessions, sessions, currentUser } = useStore();
     const currentCoachId = currentUser?.id;
 
     const [view, setView] = useState('dashboard');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
     const [clientsSubView, setClientsSubView] = useState(() => readStoredState().clientsSubView ?? 'list');
 
     const [localClients, setLocalClients] = useState(() => readStoredState().clients ?? initialClients);
@@ -49,6 +54,40 @@ const Trainers = ({ onLogout }) => {
     useEffect(() => {
         setActiveRole('trainer');
     }, []);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyHeight = document.body.style.height;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousHtmlHeight = document.documentElement.style.height;
+
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100vh';
+        document.documentElement.style.overflow = 'hidden';
+        document.documentElement.style.height = '100vh';
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.height = previousBodyHeight;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.documentElement.style.height = previousHtmlHeight;
+        };
+    }, []);
+
+    useEffect(() => {
+        const requestedView = location.state?.trainerView;
+        if (!requestedView) return;
+
+        if (requestedView === 'clients') {
+            setClientsSubView('list');
+            setView('clients');
+            return;
+        }
+
+        setView(requestedView);
+    }, [location.state]);
 
     useEffect(() => {
         if (currentCoachId) {
@@ -184,41 +223,48 @@ const Trainers = ({ onLogout }) => {
         setView(nextView);
     };
 
+    const closeSidebar = () => setIsSidebarOpen(false);
+
+    const handleSidebarNavigation = (action) => {
+        action();
+        closeSidebar();
+    };
+
+    const trainerNavItems = createTrainerNavItems({
+        activeView: view,
+        onDashboard: () => handleSidebarNavigation(() => handleRootNavigation('dashboard')),
+        onClients: () => handleSidebarNavigation(openClientsList),
+        onSchedule: () => handleSidebarNavigation(() => handleRootNavigation('schedule')),
+        onEvents: () => handleSidebarNavigation(() => navigate('/events', { state: { backPath: '/trainer/dashboard' } })),
+        onAttendance: () => handleSidebarNavigation(() => handleRootNavigation('attendance')),
+        onProfile: () => handleSidebarNavigation(() => handleRootNavigation('profile')),
+        onSupport: () => handleSidebarNavigation(() => navigate('/support', { state: { backPath: '/trainer/dashboard' } })),
+    });
+
     return (
-        <div className="min-h-screen bg-[#111412] px-0 py-0 text-white md:px-6 md:py-8">
-            <div className="mx-auto min-h-screen max-w-[1320px] overflow-hidden bg-[#161916] md:min-h-0 md:rounded-[38px] md:border md:border-white/10 md:shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
-                <div className="relative min-h-screen overflow-hidden">
+        <div className="fixed inset-0 overflow-hidden bg-[#111412] px-0 py-0 text-white md:p-6">
+            <div className="mx-auto h-full max-w-[1320px] overflow-hidden bg-[#161916] md:rounded-[38px] md:border md:border-white/10 md:shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+                <div className="relative h-full overflow-hidden">
                     <div className="absolute inset-0 bg-[#151716]" />
                     <div className="absolute inset-0 opacity-95" style={{ background: grainGradient }} />
                     <div className="absolute inset-0 opacity-45 mix-blend-soft-light" style={noiseStyle} />
 
-                    <div className="relative z-10 mx-auto flex min-h-screen max-w-[1260px] flex-col lg:min-h-[920px] lg:flex-row">
-                        <aside className="hidden lg:flex lg:w-[250px] lg:flex-col lg:justify-between lg:border-r lg:border-white/10 lg:bg-black/10 lg:p-8">
-                            <div>
-                                <p className="text-sm uppercase tracking-[0.35em] text-white/35">Trainer Mode</p>
-                                <h2 className="mt-4 font-rubik text-4xl font-black text-[#a8a25f]">HeroFit</h2>
-                                <p className="mt-4 text-sm leading-relaxed text-white/55">
-                                    Previous dashboard structure, now restyled closer to your mobile concept.
-                                </p>
-                            </div>
+                    <div className="relative z-10 mx-auto h-full max-w-[1260px]">
+                        <TrainerDrawer
+                            isOpen={isSidebarOpen}
+                            items={trainerNavItems}
+                            onClose={closeSidebar}
+                            onOpen={() => setIsSidebarOpen(true)}
+                            onLogout={() => handleSidebarNavigation(onLogout)}
+                        />
 
-                            <div className="space-y-3">
-                                <DesktopNavButton label="Dashboard" active={view === 'dashboard'} onClick={() => handleRootNavigation('dashboard')} />
-                                <DesktopNavButton label="Clients" active={view === 'clients'} onClick={openClientsList} />
-                                <DesktopNavButton label="Schedule" active={view === 'schedule'} onClick={() => handleRootNavigation('schedule')} />
-                                <DesktopNavButton label="Events" onClick={() => navigate('/events', { state: { backPath: '/trainer/dashboard' } })} />
-                                <DesktopNavButton label="Attendance" active={view === 'attendance'} onClick={() => handleRootNavigation('attendance')} />
-                                <DesktopNavButton label="Profile" active={view === 'profile'} onClick={() => handleRootNavigation('profile')} />
-                                <DesktopNavButton label="Log out" danger onClick={onLogout} />
-                            </div>
-                        </aside>
-
-                        <main className="flex-1">
+                        <main className="h-full w-full overflow-y-auto overflow-x-hidden">
                             {view === 'dashboard' && (
                                 <TrainerHomeView
                                     onOpenClients={openClientsList}
                                     onOpenSchedule={() => setView('schedule')}
                                     onOpenProfile={() => setView('profile')}
+                                    onOpenAIChat={() => setIsAIChatOpen(true)}
                                     clients={clients}
                                     assignedWorkouts={assignedWorkouts}
                                     keyMetrics={keyMetrics}
@@ -248,11 +294,8 @@ const Trainers = ({ onLogout }) => {
 
                             {view === 'clients' && clientsSubView === 'list' && (
                                 <TrainerClientsView
-                                    onBack={() => setView('dashboard')}
                                     onOpenDetails={openClientDetails}
-                                    onOpenProfile={() => setView('profile')}
                                     clients={clients}
-                                    selectedClient={selectedClient}
                                     setSelectedClientId={setSelectedClientId}
                                 />
                             )}
@@ -283,6 +326,10 @@ const Trainers = ({ onLogout }) => {
                                 />
                             )}
                         </main>
+
+                        {isAIChatOpen && (
+                            <AIChat onClose={() => setIsAIChatOpen(false)} />
+                        )}
 
                     </div>
                 </div>

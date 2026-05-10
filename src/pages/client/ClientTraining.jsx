@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import Background from '../../components/common/Background.jsx';
 import trainingBg from '../../assets/training.png';
 import useStore from '../../store/useStore';
 
@@ -78,11 +79,12 @@ const ClientTraining = () => {
     }
 
     return (
-        <div
-            key={selectedTraining.id}
-            className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat fixed inset-0 overflow-hidden"
-            style={{backgroundImage: `url(${trainingBg})`}}
-        >
+        <Background>
+            <div
+                key={selectedTraining.id}
+                className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat overflow-hidden"
+                style={{backgroundImage: `url(${trainingBg})`}}
+            >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0"/>
 
             <div className="relative z-10 flex flex-col h-full overflow-y-auto no-scrollbar">
@@ -188,7 +190,8 @@ const ClientTraining = () => {
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </Background>
     );
 };
 
