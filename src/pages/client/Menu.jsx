@@ -35,38 +35,38 @@ const Menu = () => {
 
     return (
         <Background>
-            <div className="min-h-screen flex flex-col">
+            <div className="flex h-[100dvh] min-h-[100dvh] flex-col overflow-y-auto overscroll-contain md:h-[calc(100dvh-4rem)] md:min-h-[calc(100dvh-4rem)]">
                 {/* NAVIGATION */}
-                <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center justify-between">
+                <nav className="relative z-20 flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:py-8">
                     <button
                         onClick={() => navigate('/home')} // 4. На главную
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all"
+                        className="rounded-xl bg-white/5 p-2 text-2xl transition-all hover:bg-white/10 md:rounded-2xl md:p-3 md:text-3xl"
                     >
                         <FiArrowLeft className="text-[#c1cf98]" />
                     </button>
-                    <h1 className="text-[#c1cf98] text-3xl md:text-5xl font-black tracking-tight">HeroFit</h1>
+                    <h1 className="text-[#c1cf98] text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">HeroFit</h1>
                     <button
                         onClick={() => setIsProfileOpen(true)}
-                        className="text-2xl md:text-3xl p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl transition-all"
+                        className="rounded-xl bg-white/5 p-2 text-2xl transition-all hover:bg-white/10 md:rounded-2xl md:p-3 md:text-3xl"
                     >
                         <FiUser className="text-[#c1cf98]" />
                     </button>
                 </nav>
 
                 {/* MENU ITEMS */}
-                <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 gap-6 pb-24">
+                <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-start gap-4 overflow-y-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 sm:justify-center sm:gap-6 sm:px-6 sm:pb-24 sm:pt-0">
                     {menuItems.map((item) => (
                         <button
                             key={item.name}
                             onClick={() => navigate(item.path)} // 5. Переход по пути
-                            className="relative w-full max-w-[340px] py-5 px-6
+                            className="relative flex min-h-14 w-full max-w-[340px] items-center justify-center px-6 py-4
                                        bg-white/5 backdrop-blur-sm
                                        border-2 border-transparent
                                        hover:border-[#c1cf98] active:border-[#c1cf98]
-                                       rounded-full text-xl font-medium tracking-wide
-                                       flex items-center justify-center transition-all duration-300 group"
+                                       rounded-full text-lg font-medium tracking-wide
+                                       transition-all duration-300 group sm:py-5 sm:text-xl"
                         >
-                            <span className="absolute left-8 text-white opacity-80 group-hover:opacity-100 transition-opacity">
+                            <span className="absolute left-6 text-white opacity-80 transition-opacity group-hover:opacity-100 sm:left-8">
                                 {item.icon}</span>
                             <span className="text-white">{item.name}</span>
                         </button>
@@ -76,16 +76,16 @@ const Menu = () => {
                 {/* MODAL OVERLAY */}
                 {isProfileOpen && (
                     <div
-                        className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 transition-all"
+                        className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all sm:p-6"
                         onClick={() => setIsProfileOpen(false)}
                     >
                         <div
-                            className="relative w-full max-w-sm bg-white/10 backdrop-blur-2xl rounded-[32px] p-8 shadow-2xl"
+                            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-[28px] bg-white/10 p-6 shadow-2xl backdrop-blur-2xl sm:rounded-[32px] sm:p-8"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button
                                 onClick={() => setIsProfileOpen(false)}
-                                className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+                                className="absolute right-5 top-5 text-white/50 transition-colors hover:text-white sm:right-6 sm:top-6"
                             >
                                 <FiX size={24} />
                             </button>

@@ -15,14 +15,14 @@ export const noiseStyle = {
 
 const Background = ({ children }) => {
     return (
-        <div className="min-h-screen bg-[#111412] px-0 py-0 text-white md:px-6 md:py-8">
-            <div className="mx-auto min-h-screen max-w-[1320px] overflow-hidden bg-[#161916] md:min-h-0 md:rounded-[38px] md:border md:border-white/10 md:shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
-                <div className="relative min-h-screen w-full overflow-hidden">
+        <div className="min-h-[100dvh] bg-[#111412] px-0 py-0 text-white md:px-6 md:py-8">
+            <div className="mx-auto min-h-[100dvh] max-w-[1320px] overflow-hidden bg-[#161916] md:min-h-[calc(100dvh-4rem)] md:rounded-[38px] md:border md:border-white/10 md:shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+                <div className="relative min-h-[100dvh] w-full overflow-hidden md:min-h-[calc(100dvh-4rem)]">
                     <div className="absolute inset-0 bg-[#151716]" />
                     <div className="absolute inset-0 opacity-95" style={{ background: clientFrameGradient }} />
                     <div className="absolute inset-0 z-[5] pointer-events-none opacity-45 mix-blend-soft-light" style={noiseStyle} />
 
-                    <div className="relative z-10 w-full min-h-screen">
+                    <div className="relative z-10 min-h-[100dvh] w-full md:min-h-[calc(100dvh-4rem)]">
                         {children}
                     </div>
                 </div>

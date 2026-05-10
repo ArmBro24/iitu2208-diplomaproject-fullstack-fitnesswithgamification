@@ -12,12 +12,12 @@ const TrainerSidebar = ({ isOpen, items, onClose, onLogout }) => (
         />
 
         <aside
-            className={`fixed left-0 top-0 z-50 h-screen w-[min(88vw,320px)] overflow-hidden border-r border-white/10 bg-[#151716]/95 p-5 shadow-[22px_0_55px_rgba(0,0,0,0.38)] backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[304px] md:rounded-r-[30px] md:p-6 ${
+            className={`fixed left-0 top-0 z-50 h-[100dvh] w-[min(88vw,320px)] overflow-y-auto overscroll-contain border-r border-white/10 bg-[#151716]/95 p-5 shadow-[22px_0_55px_rgba(0,0,0,0.38)] backdrop-blur-2xl transition-transform duration-300 ease-out md:w-[304px] md:rounded-r-[30px] md:p-6 ${
                 isOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
             aria-label="Trainer navigation"
         >
-            <div className="flex h-full flex-col">
+            <div className="flex min-h-full flex-col pb-[max(0px,env(safe-area-inset-bottom))]">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <p className="text-[11px] uppercase tracking-[0.28em] text-white/35">Trainer Mode</p>
@@ -47,7 +47,7 @@ const TrainerSidebar = ({ isOpen, items, onClose, onLogout }) => (
                 <button
                     type="button"
                     onClick={onLogout}
-                    className="mt-7 flex h-14 w-full items-center gap-3 rounded-[20px] border border-red-300/15 bg-[#422421]/70 px-4 text-left text-sm font-medium text-red-100 transition-all hover:bg-[#56302b] active:scale-[0.99]"
+                    className="mt-7 flex min-h-14 w-full items-center gap-3 rounded-[20px] border border-red-300/15 bg-[#422421]/70 px-4 text-left text-sm font-medium text-red-100 transition-all hover:bg-[#56302b] active:scale-[0.99]"
                 >
                     <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-950/35 text-red-100">
                         <FiLogOut size={18} />
