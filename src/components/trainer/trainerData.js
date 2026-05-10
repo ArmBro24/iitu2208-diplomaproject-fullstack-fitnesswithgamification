@@ -128,11 +128,50 @@ export const initialScheduleItems = [
 ];
 
 export const workoutTemplates = [
-    'Lower Body Power',
-    'Cardio Endurance',
-    'Mobility Recovery',
-    'Core Stability',
-    'Upper Body Strength',
+    {
+        name: 'Lower Body Power',
+        defaultPoints: 50,
+        exercises: [
+            { name: 'Barbell Squats', planned: 12 },
+            { name: 'Leg Press', planned: 15 },
+            { name: 'Lunges', planned: 20 }
+        ]
+    },
+    {
+        name: 'Cardio Endurance',
+        defaultPoints: 40,
+        exercises: [
+            { name: 'Running (Intervals)', planned: 600 }, // в секундах
+            { name: 'Jump Rope', planned: 120 }
+        ]
+    },
+    {
+        name: 'Mobility Recovery',
+        defaultPoints: 30,
+        exercises: [
+            { name: 'Cat-Cow Stretch', planned: 10 },
+            { name: 'Childs Pose', planned: 60 },
+            { name: 'Hip Openers', planned: 15 }
+        ]
+    },
+    {
+        name: 'Core Stability',
+        defaultPoints: 45,
+        exercises: [
+            { name: 'Plank', planned: 60 },
+            { name: 'Russian Twists', planned: 30 },
+            { name: 'Dead Bug', planned: 12 }
+        ]
+    },
+    {
+        name: 'Upper Body Strength',
+        defaultPoints: 55,
+        exercises: [
+            { name: 'Bench Press', planned: 10 },
+            { name: 'Pull-ups', planned: 8 },
+            { name: 'Dumbbell Rows', planned: 12 }
+        ]
+    },
 ];
 
 export const calendarDays = [

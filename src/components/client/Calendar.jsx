@@ -3,7 +3,6 @@ import useStore from '../../store/useStore';
 
 const Calendar = ({ isEdge, onDateClick }) => {
     const [tooltipDay, setTooltipDay] = useState(null);
-
     const sessions = useStore((state) => state.sessions);
 
     const now = new Date();
@@ -20,7 +19,9 @@ const Calendar = ({ isEdge, onDateClick }) => {
     const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
 
     const getSessionForDay = (day) => {
+        if (!Array.isArray(sessions)) return null;
         return sessions.find(s => {
+            if (!s.startsAt) return false;
             const d = new Date(s.startsAt);
             return d.getDate() === day &&
                 d.getMonth() === now.getMonth() &&
@@ -32,38 +33,31 @@ const Calendar = ({ isEdge, onDateClick }) => {
         const session = getSessionForDay(day);
         if (day === now.getDate()) return 'today';
         if (!session) return 'normal';
-
-        if (session.status === 'CONFIRMED' || session.status === 'COMPLETED') return 'attended';
+        if (session.status === 'CONFIRMED' || session.status === 'COMPLETED' || session.status === 'ATTENDED') return 'attended';
         if (session.status === 'REQUESTED') return 'upcoming';
         if (session.status === 'MISSED') return 'missed';
-
         return 'upcoming';
     };
 
     const handleDayClick = (day) => {
+        if (!sessions) return;
         const session = getSessionForDay(day);
-
         if (!session) {
             setTooltipDay(day);
             setTimeout(() => setTooltipDay(null), 2000);
             return;
         }
 
-        const formattedData = {
-            id: session.id,
-            status: day === now.getDate() ? 'today' : session.status.toLowerCase(),
+        const dataToSet = {
+            ...session,
             date: new Date(session.startsAt).toLocaleDateString('en-US', {
                 month: 'long', day: 'numeric', year: 'numeric'
             }),
             time: `${new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(session.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-            title: session.title,
-            exercises: [
-                { name: 'Main Quest', planned: 1, done: session.status === 'COMPLETED' ? 1 : 0 }
-            ],
-            points: { total: 10, endurance: 2, consistency: 5, motivation: 3 }
+            status: session.status.toLowerCase()
         };
 
-        if (onDateClick) onDateClick(formattedData);
+        if (onDateClick) onDateClick(dataToSet);
     };
 
     return (
@@ -80,9 +74,7 @@ const Calendar = ({ isEdge, onDateClick }) => {
                 {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map(d => (
                     <span key={d} className="text-white/40 text-xs md:text-sm font-bold">{d}</span>
                 ))}
-
                 {emptyDays.map(e => <div key={`e-${e}`}/>)}
-
                 {days.map(day => {
                     const status = getStatus(day);
                     return (
@@ -96,7 +88,6 @@ const Calendar = ({ isEdge, onDateClick }) => {
                                     No workout scheduled
                                 </span>
                             )}
-
                             {status === 'today' && (
                                 <div className="absolute inset-0 m-auto w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-full border border-white/30 group-hover:bg-white/30"/>
                             )}

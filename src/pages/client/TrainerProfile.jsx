@@ -10,8 +10,8 @@ const TrainerProfile = () => {
         currentUser,
         coachContract,
         assignCoachToClient,
+        terminateMentorship,
         setCoachContract,
-        setSubscription,
         selectedTrainer: trainer,
         trainers: trainersData
     } = useStore();
@@ -66,27 +66,22 @@ const TrainerProfile = () => {
         }, 3000);
     };
 
-    const handleCancelRequest = () => {
-        // Если контракт активен, спрашиваем подтверждение
+    const handleCancelRequest = async () => { // Добавили async
         if (coachContract.status === 'active') {
             const confirmed = window.confirm("Are you sure you want to stop mentorship? This will also cancel your training plan subscription.");
             if (!confirmed) return;
         }
 
-        // 1. Сбрасываем контракт тренера согласно структуре вашего стора
-        setCoachContract({
-            trainerId: null,
-            status: 'none'
-        });
+        try {
+            // Вызываем функцию из стора для удаления связи в базе данных
+            await terminateMentorship(currentUser.id);
 
-        // 2. Сбрасываем подписку, чтобы в профиле закрылся доступ к "My Plan"
-        setSubscription({
-            subId: null,
-            status: 'none'
-        });
-
-        // Опционально: можно сразу увести пользователя в профиль
-        // navigate('/home');
+            // После успешного удаления перенаправляем на главную
+            navigate('/home');
+        } catch (error) {
+            console.error("Error during termination:", error);
+            alert("Failed to terminate mentorship. Please try again.");
+        }
     };
 
     const handlePaymentSuccess = () => {

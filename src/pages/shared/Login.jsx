@@ -8,7 +8,7 @@ import { setActiveRole } from '../../utils/roleRouting.js';
 import useStore from '../../store/useStore';
 
 const Login = ({ onLogin }) => {
-    const { setCurrentUser } = useStore();
+    const { setCurrentUser, logout } = useStore();
     const [isLoaded, setIsLoaded] = useState(false);
     const [email, setEmail] = useState('');
     const navigate = useNavigate();
@@ -22,34 +22,15 @@ const Login = ({ onLogin }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        logout();
+
         const password = e.target.querySelector('input[type="password"]').value;
         const normalizedEmail = email.trim().toLowerCase();
 
-        // Демо-данные для входа без бэкенда
-        if (normalizedEmail === 'trainer@gmail.com') {
-            setActiveRole('trainer');
-            onLogin(email);
-            navigate('/trainer/dashboard');
-            return;
-        }
-
-        if (normalizedEmail === 'admin@gmail.com') {
-            setActiveRole('admin');
-            onLogin(email);
-            navigate('/admin/dashboard');
-            return;
-        }
-
-        if (normalizedEmail === 'client@gmail.com') {
-            setActiveRole('client');
-            onLogin(email);
-            navigate('/home');
-            return;
-        }
-
         try {
             const response = await api.post('/api/auth/login', {
-                email,
+                email: normalizedEmail,
                 password,
             });
 
@@ -57,28 +38,27 @@ const Login = ({ onLogin }) => {
                 localStorage.setItem('token', response.data.token);
 
                 const userId = response.data.id || response.data.userId;
-                const userRole = response.data.role.toLowerCase();
+                const userRole = response.data.role.toUpperCase();
 
                 setCurrentUser({
                     id: userId,
                     role: userRole,
-                    email: email
+                    email: normalizedEmail
                 });
 
-                if (userId) {
-                    localStorage.setItem('userId', userId);
-                }
+                localStorage.setItem('userId', userId);
+                localStorage.setItem('activeRole', userRole);
 
-                setActiveRole(userRole);
-                onLogin(email);
+                setActiveRole(userRole.toLowerCase());
+                onLogin(normalizedEmail);
 
-                if (userRole === 'coach') navigate('/trainer/dashboard');
-                else if (userRole === 'admin') navigate('/admin/dashboard');
-                else if (userRole === 'member') navigate('/home');
+                if (userRole === 'COACH') navigate('/trainer/dashboard');
+                else if (userRole === 'ADMIN') navigate('/admin/dashboard');
+                else navigate('/home');
             }
         } catch (error) {
             console.error('Login error:', error);
-            alert(error.response?.data?.message || 'Login failed. Use demo emails or start the backend.');
+            alert(error.response?.data?.message || 'Login failed. Please check your credentials.');
         }
     };
 

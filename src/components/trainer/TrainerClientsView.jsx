@@ -15,20 +15,13 @@ const TrainerClientsView = ({
 
     const filteredClients = useMemo(() => {
         return clients.filter((client) => {
-            const matchesQuery = [client.name, client.level, client.status, client.goal]
-                .join(' ')
-                .toLowerCase()
-                .includes(query.toLowerCase());
+            const matchesQuery = client.name.toLowerCase().includes(query.toLowerCase());
 
             const matchesFilter =
                 filter === 'all' ||
-                (filter === 'active' && client.status !== 'At risk') ||
-                (filter === 'needs-attention' && (
-                    client.progressRequestPending ||
-                    client.status === 'Needs review' ||
-                    client.status === 'At risk' ||
-                    client.status === 'Update requested'
-                ));
+                (filter === 'active' && client.status === 'Active') || // Те, кто просто тренируется
+                (filter === 'review' && (client.status === 'Needs review' || client.progressRequestPending)) || // Ждут оценки
+                (filter === 'past' && client.status === 'Terminated'); // Те, кто ушел
 
             return matchesQuery && matchesFilter;
         });
@@ -70,9 +63,11 @@ const TrainerClientsView = ({
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                    <FilterButton label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
-                    <FilterButton label="Active" active={filter === 'active'} onClick={() => setFilter('active')} />
-                    <FilterButton label="Needs Attention" active={filter === 'needs-attention'} onClick={() => setFilter('needs-attention')} />
+                    <FilterButton label="All" active={filter === 'all'} onClick={() => setFilter('all')}/>
+                    <FilterButton label="Active" active={filter === 'active'} onClick={() => setFilter('active')}/>
+                    <FilterButton label="Needs Review" active={filter === 'review'}
+                                  onClick={() => setFilter('review')}/>
+                    <FilterButton label="Past Clients" active={filter === 'past'} onClick={() => setFilter('past')}/>
                 </div>
 
                 <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_0.92fr]">

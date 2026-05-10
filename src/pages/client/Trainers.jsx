@@ -14,7 +14,7 @@ const Trainers = () => {
 
     useEffect(() => {
         fetchTrainers();
-    }, [fetchTrainers]); // fetchTrainers в зависимостях — это хорошая практика
+    }, [fetchTrainers]);
 
     const filteredTrainers = trainers.filter(trainer =>
         `${trainer.name} ${trainer.surname}`.toLowerCase().includes(searchTerm.toLowerCase())

@@ -76,24 +76,17 @@ const Trainers = ({ onLogout }) => {
 
     const handleAssignWorkout = async (data) => {
         try {
-            await createTraining({
-                coachId: currentCoachId,
-                memberId: data.clientId,
-                title: data.workout,
-                startsAt: data.startsAt,
-                endsAt: data.endsAt
-            });
+            await createTraining(data);
 
             setClients((currentClients) =>
                 currentClients.map((item) =>
-                    item.id === data.clientId
-                        ? { ...item, nextWorkout: data.workout, status: 'On track' }
+                    item.id === data.memberId
+                        ? { ...item, nextWorkout: data.title, status: 'On track' }
                         : item
                 )
             );
 
             setView('schedule');
-
         } catch (error) {
             console.error("Failed to assign workout:", error);
             alert("Ошибка при сохранении тренировки на сервере.");

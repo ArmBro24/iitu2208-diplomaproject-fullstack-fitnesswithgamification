@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiUserPlus, FiX, FiShield } from 'react-icons/fi'; // Добавил иконку для плана
+import { FiArrowLeft, FiUserPlus, FiX, FiShield } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import useStore from '../../store/useStore';
 
@@ -11,47 +11,48 @@ import myPlanImg from '../../assets/my_plan.png';
 import cupImg from '../../assets/cup.png';
 import AIChat from '../../components/ai/AIChat.jsx';
 
-const ClientProfile = ({ onNavigateToCoachProfile }) => {
+// 1. Убрали неиспользуемый пропс onNavigateToCoachProfile
+const ClientProfile = () => {
 
     const {
         userStats,
         coachContract,
         subscription,
         setSelectedTrainer,
-        trainers
+        trainers,
+        fetchTrainers,
     } = useStore();
+
+    React.useEffect(() => {
+        if (!trainers || trainers.length === 0) {
+            fetchTrainers();
+        }
+    }, [trainers, fetchTrainers]);
 
     const [showNoCoachModal, setShowNoCoachModal] = useState(false);
     const [showNoSubModal, setShowNoSubModal] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
     const navigate = useNavigate();
 
-    const hasCoach = coachContract && coachContract.trainerId !== null;
+    // 2. Удалили неиспользуемую переменную hasCoach
 
     const handleCoachClick = () => {
-        // Проверяем наличие тренера И статус оплаты
-        if (hasCoach && coachContract.status === 'active') {
-
-            // Ищем в массиве 'trainers', который достали из стора
+        if (coachContract && coachContract.trainerId) {
+            // Приведение к строке гарантирует правильное сравнение, если один ID пришел как number, а другой как string
             const myCoach = trainers?.find(t => String(t.id) === String(coachContract.trainerId));
 
             if (myCoach) {
                 setSelectedTrainer(myCoach);
-                if (typeof onNavigateToCoachProfile === 'function') {
-                    onNavigateToCoachProfile(myCoach);
-                }
                 navigate('/trainer-profile');
             } else {
-                // Если ID есть, но тренер не найден в списке
+                console.log("Coach ID exists but trainer not found in list yet");
                 setShowNoCoachModal(true);
             }
         } else {
-            // Если тренера нет или статус не 'active'
             setShowNoCoachModal(true);
         }
     };
 
-    // Логика клика по плану (из правок)
     const handlePlanClick = () => {
         if (subscription && subscription.subId) {
             navigate('/subscription-desc');
@@ -70,7 +71,7 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
         <Background>
             <div className="relative min-h-screen text-white font-rubik flex flex-col overflow-x-hidden">
 
-                {/* --- MODAL: NO COACH (Обновил стиль на полупрозрачный блюр) --- */}
+                {/* MODAL: NO COACH */}
                 {showNoCoachModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowNoCoachModal(false)} />
@@ -97,41 +98,24 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                     </div>
                 )}
 
-                {/* --- MODAL: NO SUBSCRIPTION (из правок) --- */}
+                {/* MODAL: NO SUBSCRIPTION */}
                 {showNoSubModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        {/* Затемнение заднего фона */}
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowNoSubModal(false)} />
-
-                        {/* Сама модалка */}
-                        <div
-                            className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-300">
-                            <button onClick={() => setShowNoSubModal(false)}
-                                    className="absolute top-4 right-4 text-white/20 hover:text-white">
+                        <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-300">
+                            <button onClick={() => setShowNoSubModal(false)} className="absolute top-4 right-4 text-white/20 hover:text-white">
                                 <FiX size={20}/>
                             </button>
-
-                            <div
-                                className="w-16 h-16 bg-[#c1cf98]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="w-16 h-16 bg-[#c1cf98]/10 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <FiShield className="text-[#c1cf98]" size={32}/>
                             </div>
-
                             <h3 className="text-xl font-bold mb-2">No Active Plan</h3>
-                            <p className="text-white/40 text-sm mb-8">Purchase a subscription to unlock your hero's full
-                                potential.</p>
-
+                            <p className="text-white/40 text-sm mb-8">Purchase a subscription to unlock your hero's full potential.</p>
                             <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={() => navigate('/subscription')}
-                                    className="w-full py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:bg-[#d4dfb2] transition-all shadow-lg shadow-[#c1cf98]/20"
-                                >
+                                <button onClick={() => navigate('/subscription')} className="w-full py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:bg-[#d4dfb2] transition-all shadow-lg shadow-[#c1cf98]/20">
                                     View Plans
                                 </button>
-
-                                <button
-                                    onClick={() => setShowNoSubModal(false)}
-                                    className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/5"
-                                >
+                                <button onClick={() => setShowNoSubModal(false)} className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/5">
                                     Later
                                 </button>
                             </div>
@@ -140,23 +124,11 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                 )}
 
                 {/* MAIN GRID */}
-                <div className="relative z-10 grid w-full flex-grow
-                    grid-cols-[1.2fr_1fr]
-                    [grid-template-areas:'header_header''avatar_right-panel''bottom_bottom']
-                    gap-y-0
-                    md:grid-cols-[0.8fr_1fr_1fr_0.8fr]
-                    md:grid-rows-[auto_1fr_auto]
-                    md:[grid-template-areas:'back_nick_nick_empty''coach_avatar_text_stats''challenges_ai_ai_plan']
-                    md:gap-x-8
-                    md:gap-y-3"
-                >
+                <div className="relative z-10 grid w-full flex-grow grid-cols-[1.2fr_1fr] [grid-template-areas:'header_header''avatar_right-panel''bottom_bottom'] gap-y-0 md:grid-cols-[0.8fr_1fr_1fr_0.8fr] md:grid-rows-[auto_1fr_auto] md:[grid-template-areas:'back_nick_nick_empty''coach_avatar_text_stats''challenges_ai_ai_plan'] md:gap-x-8 md:gap-y-3">
 
-                    {/* --- HEADER (Back Button) --- */}
+                    {/* Header */}
                     <div className="[grid-area:header] md:[grid-area:back] px-6 py-2 h-[60px] md:h-auto md:px-10 md:pt-6 md:pb-2 flex items-center z-20">
-                        <button
-                            onClick={() => navigate('/home')}
-                            className="p-0 md:p-3 bg-transparent md:bg-white/5 hover:bg-white/10 rounded-2xl transition-all active:scale-90"
-                        >
+                        <button onClick={() => navigate('/home')} className="p-0 md:p-3 bg-transparent md:bg-white/5 hover:bg-white/10 rounded-2xl transition-all active:scale-90">
                             <FiArrowLeft size={28} className="text-[#c1cf98]"/>
                         </button>
                     </div>
@@ -174,9 +146,7 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                     {/* MOBILE STATS */}
                     <div className="[grid-area:right-panel] md:hidden flex flex-col justify-between py-6 items-end">
                         <div className="text-right pr-4 pb-2">
-                            <span className="text-5xl font-black text-[#c1cf98] leading-none">
-                                {userStats?.points || 0}
-                            </span>
+                            <span className="text-5xl font-black text-[#c1cf98] leading-none">{userStats?.points || 0}</span>
                             <p className="text-[#c1cf98]/60 text-[10px] uppercase font-bold tracking-[0.2em] mt-1">points earned</p>
                         </div>
                         {statsConfig.map((stat) => (
@@ -195,9 +165,7 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                     {/* DESKTOP STATS */}
                     <div className="hidden md:flex [grid-area:stats] flex-col justify-center w-full items-end pr-0">
                         <div className="flex items-center gap-3 mb-8 w-full max-w-[280px] justify-start pl-4">
-                            <span className="text-6xl font-black text-[#c1cf98] leading-none">
-                                {userStats?.points || 0}
-                            </span>
+                            <span className="text-6xl font-black text-[#c1cf98] leading-none">{userStats?.points || 0}</span>
                             <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] leading-tight">points <br /> earned</p>
                         </div>
                         <div className="flex flex-col gap-5 w-full items-end">
@@ -210,68 +178,38 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                         </div>
                     </div>
 
-                    {/* TEXT (DESKTOP) */}
+                    {/* TEXT DESKTOP */}
                     <div className="hidden md:flex [grid-area:text] items-center px-4">
                         <div className="max-w-[350px]">
                             <p className="text-base lg:text-lg text-[#c1cf98] font-medium leading-snug">
-                                Your profile has reached <span className="text-white font-black italic">Level {userStats?.level || 1}</span>.
-                                This achievement unlocks new high-intensity training modules specifically designed for your current stats.
-                                Keep following the plan to reach the top tier.
+                                Your profile has reached <span className="text-white font-black italic">Level {userStats?.level || 1}</span>. Keep following the plan to reach the top tier.
                             </p>
                         </div>
                     </div>
 
-                    {/* --- LOWER SECTION --- */}
+                    {/* LOWER SECTION */}
                     <div className="[grid-area:bottom] md:contents flex w-full gap-x-4 px-0 pb-8">
                         <div className="w-[50%] md:contents flex flex-col gap-y-6 md:gap-y-3">
-                            {/* MY COACH */}
-                            <button
-                                onClick={handleCoachClick}
-                                className="md:[grid-area:coach] -ml-4 md:ml-0 md:mt-0 overflow-hidden
-                                rounded-r-[40px] border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98]
-                                shadow-2xl h-full min-h-[400px] relative transition-all duration-300"
-                            >
+                            <button onClick={handleCoachClick} className="md:[grid-area:coach] -ml-4 md:ml-0 md:mt-0 overflow-hidden rounded-r-[40px] border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] shadow-2xl h-full min-h-[400px] relative transition-all duration-300">
                                 <img src={coachImg} alt="Coach" className="w-full h-full object-cover object-top" />
                             </button>
 
-                            {/* CHALLENGES */}
                             <div className="md:[grid-area:challenges] flex items-end justify-start md:pb-10">
-                                <button
-                                    onClick={() => navigate('/challenges')} // Добавили переход
-                                    className="w-full md:w-[90%] h-[60px] md:h-auto py-4 md:min-h-[170px] flex flex-row md:flex-col items-center justify-center gap-3
-        bg-[#4087a1]/30 md:bg-teal-900/20 backdrop-blur-md text-white
-        border-2 border-transparent border-y-teal-400/20 border-r-teal-400/20
-        hover:border-[#c1cf98] active:border-[#c1cf98]
-        rounded-r-[30px] md:rounded-r-[40px] text-sm md:text-sm font-bold uppercase tracking-widest transition-all duration-300 group"
-                                >
-                                    <img
-                                        src={cupImg}
-                                        alt="Cup"
-                                        className="hidden md:block w-16 h-auto animate-bounce-slow group-hover:scale-110 transition-transform"
-                                    />
+                                <button onClick={() => navigate('/challenges')} className="w-full md:w-[90%] h-[60px] md:h-auto py-4 md:min-h-[170px] flex flex-row md:flex-col items-center justify-center gap-3 bg-[#4087a1]/30 md:bg-teal-900/20 backdrop-blur-md border-2 border-transparent border-y-teal-400/20 border-r-teal-400/20 hover:border-[#c1cf98] active:border-[#c1cf98] rounded-r-[30px] md:rounded-r-[40px] text-sm font-bold uppercase tracking-widest transition-all duration-300 group">
+                                    <img src={cupImg} alt="Cup" className="hidden md:block w-16 h-auto animate-bounce-slow group-hover:scale-110 transition-transform" />
                                     <span>Challenges</span>
                                 </button>
                             </div>
                         </div>
 
                         <div className="w-[50%] md:contents flex flex-col gap-y-6 justify-start">
-                            {/* AI CHAT */}
                             <div className="md:[grid-area:ai] flex items-end justify-center md:pb-10">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAIChatOpen(true)}
-                                    className="w-full md:w-[70%] py-4 md:py-8 md:min-h-[200px] flex flex-row md:flex-col items-center justify-center gap-3
-                                    bg-[#4087a1]/30 md:bg-white/5 backdrop-blur-md border-2 border-transparent md:border-white/10
-                                    hover:border-[#c1cf98] active:border-[#c1cf98]
-                                    rounded-l-[30px] rounded-r-none md:rounded-r-[40px] md:rounded-l-[40px] transition-all duration-300 px-4"
-                                >
+                                <button type="button" onClick={() => setIsAIChatOpen(true)} className="w-full md:w-[70%] py-4 md:py-8 md:min-h-[200px] flex flex-row md:flex-col items-center justify-center gap-3 bg-[#4087a1]/30 md:bg-white/5 backdrop-blur-md border-2 border-transparent md:border-white/10 hover:border-[#c1cf98] active:border-[#c1cf98] rounded-l-[30px] rounded-r-none md:rounded-r-[40px] md:rounded-l-[40px] transition-all duration-300 px-4">
                                     <div className="hidden md:flex flex-col items-start w-full gap-2 text-left px-4">
                                         <span className="text-white text-sm font-bold uppercase tracking-widest mb-1">Ai Chat</span>
                                         <div className="flex items-center gap-6 w-full">
                                             <div className="flex-grow">
-                                                <p className="text-white/70 text-[13px] leading-relaxed normal-case font-normal tracking-tight">
-                                                    Our fitness AI chat is here to help you with your daily workout sessions.
-                                                </p>
+                                                <p className="text-white/70 text-[13px] leading-relaxed normal-case font-normal tracking-tight">Fitness assistance via AI.</p>
                                             </div>
                                             <div className="w-24 flex-shrink-0 animate-bounce-slow">
                                                 <img src={aiChatImg} alt="AI" className="w-full h-auto" />
@@ -282,30 +220,19 @@ const ClientProfile = ({ onNavigateToCoachProfile }) => {
                                 </button>
                             </div>
 
-                            {/* MY PLAN (Обновленная логика клика) */}
                             <div className="flex flex-col gap-y-4 md:gap-y-0">
-                                <button
-                                    onClick={handlePlanClick}
-                                    className="md:[grid-area:plan] -mr-4 md:mr-0 relative overflow-hidden h-32 md:h-[200px]
-                                    rounded-l-[40px] border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98]
-                                    shadow-2xl md:self-end transition-all duration-300 w-full p-0"
-                                >
+                                <button onClick={handlePlanClick} className="md:[grid-area:plan] -mr-4 md:mr-0 relative overflow-hidden h-32 md:h-[200px] rounded-l-[40px] border-2 border-transparent hover:border-[#c1cf98] active:border-[#c1cf98] shadow-2xl md:self-end transition-all duration-300 w-full p-0">
                                     <img src={myPlanImg} alt="Plan" className="w-full h-full object-cover object-top" />
                                 </button>
-                                {/* MOBILE TEXT */}
                                 <div className="md:hidden pr-4 mt-4">
-                                    <p className="text-sm text-[#c1cf98] font-medium leading-tight">
-                                        Level {userStats?.level || 1} reached. Every rep counts towards your ultimate physical transformation!
-                                    </p>
+                                    <p className="text-sm text-[#c1cf98] font-medium leading-tight">Level {userStats?.level || 1} reached.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {isAIChatOpen && (
-                    <AIChat onClose={() => setIsAIChatOpen(false)} />
-                )}
+                {isAIChatOpen && <AIChat onClose={() => setIsAIChatOpen(false)} />}
             </div>
 
             <style>{`

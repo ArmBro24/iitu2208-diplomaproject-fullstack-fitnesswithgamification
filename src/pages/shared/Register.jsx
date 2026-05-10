@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PatternFormat } from 'react-number-format';
-import { useNavigate } from 'react-router-dom'; // 1. Добавлен импорт
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import {
     FiUser,
@@ -13,15 +13,17 @@ import {
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 
-
-
-const Register = () => { // 2. Убран onNavigate из пропсов
+const Register = () => {
     const [role, setRole] = useState('MEMBER');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [gender, setGender] = useState('male');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [nickname, setNickname] = useState('');
+    const [phone, setPhone] = useState('');
+    const [birthDate, setBirthDate] = useState('');
 
-    // 3. Инициализация навигатора
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -29,9 +31,15 @@ const Register = () => { // 2. Убран onNavigate из пропсов
 
         try {
             const response = await api.post('/api/auth/register', {
-                email: email,
-                password: password,
-                role: role // Отправляем выбранную роль
+                email,
+                password,
+                role,
+                firstName,
+                lastName,
+                nickname,
+                phone,
+                gender,
+                birthDate
             });
 
             if (response.status === 201 || response.status === 200) {
@@ -47,11 +55,7 @@ const Register = () => { // 2. Убран onNavigate из пропсов
     return (
         <Background>
             <div className="flex items-center justify-center py-10 min-h-screen">
-
-                {/* Контейнер формы */}
                 <div className="w-full max-w-[340px] md:max-w-md px-6 flex flex-col items-center">
-
-                    {/* Заголовок */}
                     <div className="flex items-baseline gap-2 mb-8 text-center">
                         <h1 className="text-[#c1cf98] text-4xl font-rubik font-black tracking-tight">
                             HeroFit
@@ -60,25 +64,40 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                     </div>
 
                     <form className="w-full space-y-4" onSubmit={handleSubmit}>
-                        {/* Имя и Фамилия */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
                                 <FiUser className="input-icon"/>
-                                <input type="text" placeholder="name" className="auth-input pl-10"/>
+                                <input
+                                    type="text"
+                                    placeholder="name"
+                                    className="auth-input pl-10"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                />
                             </div>
                             <div className="relative">
                                 <FiUser className="input-icon"/>
-                                <input type="text" placeholder="surname" className="auth-input pl-10"/>
+                                <input
+                                    type="text"
+                                    placeholder="surname"
+                                    className="auth-input pl-10"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                />
                             </div>
                         </div>
 
-                        {/* Email */}
                         <div className="relative">
                             <FiMail className="input-icon"/>
-                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e-mail address" className="auth-input pl-10"/>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="e-mail address"
+                                className="auth-input pl-10"
+                            />
                         </div>
 
-                        {/* Телефон */}
                         <div className="relative">
                             <FiPhone className="input-icon"/>
                             <PatternFormat
@@ -86,24 +105,31 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                                 mask="_"
                                 placeholder="+7 (7__) ___-__-__"
                                 className="auth-input pl-10"
+                                onValueChange={(values) => setPhone(values.formattedValue)}
                             />
                         </div>
 
-                        {/* Никнейм */}
                         <div className="relative">
                             <FiTag className="input-icon"/>
-                            <input type="text" placeholder="nickname" className="auth-input pl-10"/>
+                            <input
+                                type="text"
+                                placeholder="nickname"
+                                className="auth-input pl-10"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                            />
                         </div>
 
-                        {/* Дата рождения и Роль */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
                                 <FiCalendar className="input-icon"/>
                                 <input
                                     type="text"
                                     placeholder="date of birth"
+                                    value={birthDate}
                                     onFocus={(e) => e.target.type = 'date'}
                                     onBlur={(e) => !e.target.value && (e.target.type = 'text')}
+                                    onChange={(e) => setBirthDate(e.target.value)}
                                     className="auth-input pl-10 text-sm"
                                 />
                             </div>
@@ -122,9 +148,7 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                             </div>
                         </div>
 
-                        {/* Переключатель пола */}
-                        <div
-                            className="relative flex bg-white/5 rounded-2xl p-1 border border-white/10 overflow-hidden">
+                        <div className="relative flex bg-white/5 rounded-2xl p-1 border border-white/10 overflow-hidden">
                             <div
                                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out z-0 ${
                                     gender === 'male' ? 'left-1' : 'left-[50%]'
@@ -150,20 +174,23 @@ const Register = () => { // 2. Убран onNavigate из пропсов
                             </button>
                         </div>
 
-                        {/* Пароль */}
                         <div className="relative">
                             <FiLock className="input-icon"/>
-                            <input type="password" value={password}
-                                   onChange={(e) => setPassword(e.target.value)} placeholder="password" className="auth-input pl-10"/>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="password"
+                                className="auth-input pl-10"
+                            />
                         </div>
 
-                        {/* Нижняя панель: логин и кнопка сабмита */}
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mt-8 w-full">
                             <p className="text-gray-500 text-[0.95rem] m-0 leading-none pl-2">
                                 Have an account?
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/login')} // Переход на логин
+                                    onClick={() => navigate('/login')}
                                     className="text-white hover:underline bg-transparent border-none p-0 ml-1 cursor-pointer font-medium"
                                 >
                                     Log in
