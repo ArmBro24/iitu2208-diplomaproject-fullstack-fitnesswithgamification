@@ -13,6 +13,7 @@ const trainerImages = {
 
 const API_AUTH_URL = 'http://localhost:8080/api/users';
 const API_BASE_URL = 'http://localhost:8081/api/training';
+const API_MENTORSHIP_URL = 'http://localhost:8081/api/training/mentorship';
 
 const useStore = create((set, _get) => ({
     currentUser: {
@@ -36,6 +37,18 @@ const useStore = create((set, _get) => ({
     sessions: [],
     clients: [],
 
+    logout: () => {
+        localStorage.clear();
+        set({
+            currentUser: { id: null, role: null, email: null },
+            sessions: [],
+            clients: [],
+            coachContract: { trainerId: null, status: 'none' },
+            selectedTrainer: null,
+            selectedTraining: null
+        });
+    },
+
     setCurrentUser: (userData) => {
         if (userData && userData.id) {
             localStorage.setItem('userId', userData.id);
@@ -46,22 +59,53 @@ const useStore = create((set, _get) => ({
         set({ currentUser: userData });
     },
 
+    fetchUserProfile: async () => {
+        try {
+            const userId = localStorage.getItem('userId');
+            const token = localStorage.getItem('token');
+            if (!userId || !token) return;
+
+            const authResponse = await axios.get(`${API_AUTH_URL}/${userId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            set({ currentUser: { ...authResponse.data } });
+
+            try {
+                const mentResponse = await axios.get(`${API_MENTORSHIP_URL}/client/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (mentResponse.data) {
+                    set({
+                        coachContract: {
+                            trainerId: mentResponse.data.coachId,
+                            status: 'active'
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("No coach assigned yet in Training Service");
+                set({ coachContract: { trainerId: null, status: 'none' } });
+            }
+        } catch (error) {
+            console.error("Failed to fetch user profile:", error);
+        }
+    },
+
     fetchMyClients: async (coachId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_AUTH_URL}/my-clients/${coachId}`, {
+            const response = await axios.get(`${API_MENTORSHIP_URL}/coach/${coachId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const mappedClients = response.data.map(u => ({
-                id: u.id,
-                name: u.email.split('@')[0],
+            const mappedClients = response.data.map(m => ({
+                id: m.clientId,
+                name: m.clientNickname || `User #${m.clientId}`,
                 level: "Lv. 1",
                 attendance: "100%",
                 progress: 0,
-                status: "New",
-                goal: "Not set",
-                progressRequestPending: false
+                status: "Active",
+                goal: "Not set"
             }));
 
             set({ clients: mappedClients });
@@ -73,12 +117,9 @@ const useStore = create((set, _get) => ({
     assignCoachToClient: async (clientId, coachId) => {
         try {
             const token = localStorage.getItem('token');
-            if (!token) {
-                alert("No token found. Please relogin.");
-                return;
-            }
+            if (!token) return;
 
-            await axios.put(`${API_AUTH_URL}/${clientId}/assign-coach/${coachId}`, {}, {
+            await axios.post(`${API_MENTORSHIP_URL}/assign?clientId=${clientId}&coachId=${coachId}`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -88,25 +129,35 @@ const useStore = create((set, _get) => ({
                     status: 'active'
                 }
             });
-
-            console.log(`Successfully assigned coach ${coachId} to client ${clientId}`);
+            console.log(`Successfully assigned coach ${coachId}`);
         } catch (error) {
             console.error("Error assigning coach:", error);
-            alert("Failed to save coach selection on server.");
+            alert("Failed to assign coach.");
         }
     },
 
-    // ОБНОВЛЕННЫЙ МЕТОД С АВТОРИЗАЦИЕЙ
+    terminateMentorship: async (clientId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_MENTORSHIP_URL}/client/${clientId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            set({
+                coachContract: { trainerId: null, status: 'none' },
+                subscription: { subId: null, status: 'none' }
+            });
+            console.log("Mentorship terminated");
+        } catch (error) {
+            console.error("Failed to terminate mentorship:", error);
+        }
+    },
+
     fetchTrainers: async () => {
         try {
-            // 1. Извлекаем токен
             const token = localStorage.getItem('token');
-
             const response = await axios.get(`${API_AUTH_URL}/trainers`, {
-                headers: {
-                    // 2. Добавляем заголовок Bearer
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const realTrainers = response.data.map(u => ({
@@ -122,97 +173,45 @@ const useStore = create((set, _get) => ({
             set({ trainers: realTrainers });
         } catch (error) {
             console.error("Failed to fetch trainers:", error);
-
-            if (error.response && (error.response.status === 403 || error.response.status === 401)) {
-                alert("Сессия истекла или недостаточно прав. Войдите в систему снова.");
-            }
         }
     },
 
     fetchSessions: async (memberId) => {
         try {
             const token = localStorage.getItem('token');
-
             const response = await axios.get(`${API_BASE_URL}/sessions/member/${memberId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             set({ sessions: response.data });
         } catch (error) {
             console.error("Failed to fetch sessions:", error);
-
-            if (error.response && error.response.status === 403) {
-                console.warn("Access denied to sessions. Check if token is valid.");
-            }
         }
     },
 
     createTraining: async (trainingData) => {
         try {
             const token = localStorage.getItem('token');
+            console.log("Auth Token present:", !!token);
+
             const response = await axios.post(`${API_BASE_URL}/sessions`, trainingData, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
+
             set((state) => ({
-                sessions: [...state.sessions, response.data]
+                sessions: [...(state.sessions || []), response.data]
             }));
-            console.log("Session created successfully:", response.data);
+
+            alert("Workout assigned successfully!");
         } catch (error) {
-            console.error("Error creating session:", error);
+            if (error.response && error.response.data) {
+                console.error("Backend Error Details:", error.response.data);
+            }
+            console.error("Full Error object:", error);
         }
     },
-
-    acceptChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(ch =>
-            ch.id === id ? { ...ch, status: 'active', startDate: new Date().toLocaleDateString() } : ch
-        )
-    })),
-
-    completeChallenge: (id) => set((state) => {
-        const challenge = state.challenges.find(ch => ch.id === id);
-        if (!challenge) return state;
-        const newTotalPoints = state.userStats.points + challenge.points;
-        return {
-            userStats: { ...state.userStats, points: newTotalPoints },
-            challenges: state.challenges.map(ch =>
-                ch.id === id ? { ...ch, status: 'completed', result: 'success' } : ch
-            )
-        };
-    }),
-
-    failChallenge: (id) => set((state) => {
-        const challenge = state.challenges.find(ch => ch.id === id);
-        if (!challenge) return state;
-        const penalty = Math.floor(challenge.points * 0.2);
-        return {
-            userStats: { ...state.userStats, points: state.userStats.points - penalty },
-            challenges: state.challenges.map(ch =>
-                ch.id === id ? { ...ch, status: 'completed', result: 'fail' } : ch
-            )
-        };
-    }),
-
-    retryChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(ch =>
-            ch.id === id ? { ...ch, status: 'active', result: null } : ch
-        )
-    })),
-
-    setCoachContract: (contract) => set({ coachContract: contract }),
-    setSubscription: (sub) => set({ subscription: sub }),
-    setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
-    setSelectedTraining: (training) => set({ selectedTraining: training }),
-    addPoints: (amount, statType) => set((state) => ({
-        userStats: {
-            ...state.userStats,
-            points: state.userStats.points + amount,
-            [statType]: state.userStats[statType] + Math.floor(amount / 10)
-        }
-    })),
 
     approveSession: async (sessionId) => {
         try {
@@ -224,31 +223,57 @@ const useStore = create((set, _get) => ({
             );
 
             set((state) => {
-                const updatedSessions = state.sessions.map(s =>
-                    s.id === sessionId ? { ...s, ...response.data } : s
-                );
-
-                let updatedSelected = state.selectedTraining;
-                if (state.selectedTraining?.id === sessionId) {
-
-                    updatedSelected = {
-                        ...state.selectedTraining,
-                        ...response.data
-                    };
-                }
-
+                const updatedSessions = state.sessions.map(s => s.id === sessionId ? response.data : s);
                 return {
                     sessions: updatedSessions,
-                    selectedTraining: updatedSelected
+                    selectedTraining: response.data
                 };
             });
-
             return true;
         } catch (error) {
             console.error("Failed to approve session:", error);
             return false;
         }
     },
+
+    updateStatus: async (sessionId, status) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.patch(
+                `${API_BASE_URL}/sessions/${sessionId}/status?status=${status}`,
+                {},
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            set((state) => ({
+                sessions: state.sessions.map(s => s.id === sessionId ? { ...s, ...response.data } : s),
+                selectedTraining: state.selectedTraining?.id === sessionId
+                    ? { ...state.selectedTraining, ...response.data }
+                    : state.selectedTraining
+            }));
+            return true;
+        } catch (error) {
+            console.error("Failed to update status:", error);
+            return false;
+        }
+    },
+
+    acceptChallenge: (id) => set((state) => ({
+        challenges: state.challenges.map(ch =>
+            ch.id === id ? { ...ch, status: 'active', startDate: new Date().toLocaleDateString() } : ch
+        )
+    })),
+    completeChallenge: (id) => set((state) => {
+        const challenge = state.challenges.find(ch => ch.id === id);
+        if (!challenge) return state;
+        return {
+            userStats: { ...state.userStats, points: state.userStats.points + challenge.points },
+            challenges: state.challenges.map(ch => ch.id === id ? { ...ch, status: 'completed', result: 'success' } : ch)
+        };
+    }),
+    setCoachContract: (contract) => set({ coachContract: contract }),
+    setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
+    setSelectedTraining: (training) => set({ selectedTraining: training })
 }));
 
 export default useStore;
