@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import useStore from './store/useStore';
+import AppErrorBoundary from './components/common/AppErrorBoundary.jsx';
 import LoadingScreen from './components/common/LoadingScreen.jsx';
 import Register from './pages/shared/Register.jsx';
 import Login from './pages/shared/Login.jsx';
@@ -44,6 +45,7 @@ function App() {
     if (isLoading) return <LoadingScreen />;
 
     return (
+        <AppErrorBoundary>
         <Routes>
             <Route path="/" element={<Navigate to="/register" />} />
             <Route path="/register" element={<Register />} />
@@ -73,6 +75,7 @@ function App() {
 
             <Route path="/challenges" element={<Challenge />} />
         </Routes>
+        </AppErrorBoundary>
     );
 }
 

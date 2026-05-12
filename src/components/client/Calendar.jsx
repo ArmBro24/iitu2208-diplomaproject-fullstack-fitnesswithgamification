@@ -6,8 +6,10 @@ const Calendar = ({ isEdge, onDateClick }) => {
     const sessions = useStore((state) => state.sessions);
 
     const now = new Date();
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"];
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
 
     const currentMonth = monthNames[now.getMonth()];
     const currentYear = now.getFullYear();
@@ -20,12 +22,12 @@ const Calendar = ({ isEdge, onDateClick }) => {
 
     const getSessionForDay = (day) => {
         if (!Array.isArray(sessions)) return null;
-        return sessions.find(s => {
-            if (!s.startsAt) return false;
-            const d = new Date(s.startsAt);
-            return d.getDate() === day &&
-                d.getMonth() === now.getMonth() &&
-                d.getFullYear() === now.getFullYear();
+        return sessions.find((session) => {
+            if (!session.startsAt) return false;
+            const date = new Date(session.startsAt);
+            return date.getDate() === day &&
+                date.getMonth() === now.getMonth() &&
+                date.getFullYear() === now.getFullYear();
         });
     };
 
@@ -33,9 +35,11 @@ const Calendar = ({ isEdge, onDateClick }) => {
         const session = getSessionForDay(day);
         if (day === now.getDate()) return 'today';
         if (!session) return 'normal';
-        if (session.status === 'CONFIRMED' || session.status === 'COMPLETED' || session.status === 'ATTENDED') return 'attended';
-        if (session.status === 'REQUESTED') return 'upcoming';
-        if (session.status === 'MISSED') return 'missed';
+
+        const status = String(session.status).toUpperCase();
+        if (['CONFIRMED', 'COMPLETED', 'ATTENDED'].includes(status)) return 'attended';
+        if (status === 'REQUESTED') return 'upcoming';
+        if (status === 'MISSED') return 'missed';
         return 'upcoming';
     };
 
@@ -44,58 +48,69 @@ const Calendar = ({ isEdge, onDateClick }) => {
         const session = getSessionForDay(day);
         if (!session) {
             setTooltipDay(day);
-            setTimeout(() => setTooltipDay(null), 2000);
+            setTimeout(() => setTooltipDay(null), 1800);
             return;
         }
 
+        const startsAt = new Date(session.startsAt);
+        const endsAt = session.endsAt ? new Date(session.endsAt) : null;
+        const endTime = endsAt
+            ? endsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '';
+
         const dataToSet = {
             ...session,
-            date: new Date(session.startsAt).toLocaleDateString('en-US', {
+            date: startsAt.toLocaleDateString('en-US', {
                 month: 'long', day: 'numeric', year: 'numeric'
             }),
-            time: `${new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(session.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-            status: session.status.toLowerCase()
+            time: `${startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${endTime ? ` - ${endTime}` : ''}`,
+            status: String(session.status).toLowerCase()
         };
 
         if (onDateClick) onDateClick(dataToSet);
     };
 
     return (
-        <div className={`bg-[#4a4e3b]/30 backdrop-blur-xl p-6 md:p-10 w-full border-t border-white/5 shadow-2xl
+        <div className={`w-full border-t border-white/10 bg-[rgba(18,20,24,0.82)] p-5 shadow-2xl backdrop-blur-xl md:p-7
             ${isEdge
-            ? 'rounded-tr-[40px] md:rounded-tr-0 md:rounded-bl-0 md:rounded-tl-[80px] md:border-l'
-            : 'rounded-[40px] md:rounded-[80px]'}`}>
+            ? 'rounded-tr-[34px] md:rounded-tl-[56px] md:rounded-tr-0 md:rounded-bl-0 md:border-l'
+            : 'rounded-[28px]'}`}>
 
-            <h3 className="text-white text-xl md:text-3xl font-bold mb-8 text-left opacity-90">
-                {currentMonth} {currentYear}
-            </h3>
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c1cf98]/75">
+                        Training calendar
+                    </p>
+                    <h3 className="mt-1 text-2xl font-black tracking-tight text-[#f5efe7] md:text-3xl">
+                        {currentMonth} {currentYear}
+                    </h3>
+                </div>
+                <span className="rounded-full border border-[#c1cf98]/25 bg-[#c1cf98]/10 px-3 py-1 text-xs font-bold text-[#dfe9bf]">
+                    Live
+                </span>
+            </div>
 
-            <div className="grid grid-cols-7 gap-y-4 md:gap-y-6 text-center">
-                {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map(d => (
-                    <span key={d} className="text-white/40 text-xs md:text-sm font-bold">{d}</span>
+            <div className="grid grid-cols-7 gap-x-1 gap-y-2 text-center md:gap-y-3">
+                {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map((day) => (
+                    <span key={day} className="text-[11px] font-black uppercase tracking-[0.14em] text-white/40 md:text-xs">
+                        {day}
+                    </span>
                 ))}
-                {emptyDays.map(e => <div key={`e-${e}`}/>)}
-                {days.map(day => {
+                {emptyDays.map((day) => <div key={`e-${day}`} />)}
+                {days.map((day) => {
                     const status = getStatus(day);
                     return (
                         <div
                             key={day}
                             onClick={() => handleDayClick(day)}
-                            className="relative flex justify-center items-center h-10 w-full cursor-pointer hover:scale-110 transition-transform group"
+                            className="group relative flex h-10 w-full cursor-pointer items-center justify-center md:h-11"
                         >
                             {tooltipDay === day && (
-                                <span className="absolute bottom-full mb-3 bg-[#c1cf98] text-[#1a120d] text-sm md:text-base font-bold px-4 py-2 rounded-xl animate-bounce shadow-2xl z-50 whitespace-nowrap">
+                                <span className="absolute bottom-full z-50 mb-3 whitespace-nowrap rounded-2xl border border-[#c1cf98]/40 bg-[#dfe9bf] px-4 py-2 text-xs font-black text-[#161913] shadow-2xl">
                                     No workout scheduled
                                 </span>
                             )}
-                            {status === 'today' && (
-                                <div className="absolute inset-0 m-auto w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-full border border-white/30 group-hover:bg-white/30"/>
-                            )}
-                            <span className={`relative z-10 text-base md:text-xl font-bold
-                                ${status === 'attended' ? 'text-[#8b5cf6]' :
-                                status === 'missed' ? 'text-[#f87171]' :
-                                    status === 'upcoming' ? 'text-[#c1cf98]' : 'text-white'}`}
-                            >
+                            <span className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-2xl text-sm font-black transition-all duration-300 group-hover:-translate-y-1 group-hover:scale-105 md:h-10 md:w-10 md:text-base ${dayStateClass(status)}`}>
                                 {day}
                             </span>
                         </div>
@@ -103,19 +118,35 @@ const Calendar = ({ isEdge, onDateClick }) => {
                 })}
             </div>
 
-            <div className="flex flex-wrap gap-x-6 gap-y-2 mt-10 pt-8 border-t border-white/10">
-                <LegendItem color="bg-[#8b5cf6]" label="attended"/>
-                <LegendItem color="bg-[#f87171]" label="missed"/>
-                <LegendItem color="bg-[#c1cf98]" label="upcoming"/>
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-5">
+                <LegendItem color="bg-[#8b5cf6]" label="attended" />
+                <LegendItem color="bg-[#f87171]" label="missed" />
+                <LegendItem color="bg-[#c1cf98]" label="upcoming" />
             </div>
         </div>
     );
 };
 
-const LegendItem = ({color, label}) => (
-    <div className="flex items-center gap-2 text-sm md:text-base text-white/60">
-        <span className={`w-3 h-3 rounded-full ${color}`}/>
-        <span>— {label}</span>
+const dayStateClass = (status) => {
+    if (status === 'today') {
+        return 'border border-white/25 bg-white/16 text-white shadow-[0_0_24px_rgba(255,255,255,0.12)]';
+    }
+    if (status === 'attended') {
+        return 'border border-[#8b5cf6]/30 bg-[#8b5cf6]/14 text-[#bda7ff]';
+    }
+    if (status === 'missed') {
+        return 'border border-[#f87171]/30 bg-[#f87171]/12 text-[#fca5a5]';
+    }
+    if (status === 'upcoming') {
+        return 'border border-[#c1cf98]/35 bg-[#c1cf98]/12 text-[#dfe9bf]';
+    }
+    return 'border border-transparent text-white/72 group-hover:border-white/10 group-hover:bg-white/[0.06] group-hover:text-white';
+};
+
+const LegendItem = ({ color, label }) => (
+    <div className="flex items-center gap-2 text-xs font-medium text-white/55 md:text-sm">
+        <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+        <span>{label}</span>
     </div>
 );
 

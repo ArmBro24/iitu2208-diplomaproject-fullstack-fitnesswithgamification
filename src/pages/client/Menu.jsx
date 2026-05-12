@@ -7,15 +7,26 @@ import {
     FiLogOut,
     FiBarChart2,
     FiGlobe,
-    FiHelpCircle
+    FiHelpCircle,
+    FiTarget
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
+import { setActiveRole } from '../../utils/roleRouting.js';
 
 const Menu = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const navigate = useNavigate(); // 2. Инициализация навигации
 
+    React.useEffect(() => {
+        setActiveRole('member');
+    }, []);
+
     const menuItems = [
+        {
+            name: 'Challenges',
+            icon: <FiTarget size={22} />,
+            path: '/challenges'
+        },
         {
             name: 'Leaderboard',
             icon: <FiBarChart2 size={22} />,
