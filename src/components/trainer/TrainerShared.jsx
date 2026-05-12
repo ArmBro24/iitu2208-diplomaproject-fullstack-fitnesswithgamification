@@ -4,13 +4,13 @@ import avatarMe from '../../assets/avatars/avatar-me.png';
 import { accentClasses, avatarFrame, statusTextClass } from './trainerData.js';
 
 export const SectionCard = ({ title, actionLabel, onAction, children }) => (
-    <section className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-4 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-5">
+    <section className="rounded-[28px] border border-white/10 bg-black/15 p-4 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-5">
         <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="font-rubik text-[1.35rem] font-bold text-[#f0e4dc] md:text-[1.5rem]">{title}</h2>
             {actionLabel && (
                 <button
                     onClick={onAction}
-                    className="rounded-full border border-[#dbc98d]/55 px-4 py-2 text-sm text-[#f3e7b5]"
+                    className="rounded-full border border-[#c1cf98]/30 px-4 py-2 text-sm text-[#c1cf98] transition-all hover:bg-white/5"
                 >
                     {actionLabel}
                 </button>
@@ -31,7 +31,7 @@ export const MetricCard = ({ title, value, icon: Icon, accent }) => (
 );
 
 export const WorkoutCard = ({ item, index, large = false }) => (
-    <div className="flex items-center gap-4 rounded-[26px] border border-[#dce8c5] bg-[rgba(66,74,53,0.14)] px-4 py-4 shadow-[0_6px_20px_rgba(0,0,0,0.12)]">
+    <div className="flex items-center gap-4 rounded-[28px] border border-white/10 bg-black/15 px-4 py-4 shadow-[0_6px_20px_rgba(0,0,0,0.12)] transition-all hover:border-[#c1cf98]/35 hover:bg-white/10">
         <div className={`relative shrink-0 overflow-hidden rounded-full border border-white/15 ${large ? 'h-[72px] w-[72px]' : 'h-[58px] w-[58px]'} ${avatarFrame(index)}`}>
             <img
                 src={avatarMe}
@@ -62,7 +62,7 @@ export const WorkoutCard = ({ item, index, large = false }) => (
 );
 
 export const InfoBox = ({ label, value }) => (
-    <div className="rounded-[18px] bg-black/12 px-3 py-3">
+    <div className="rounded-[18px] border border-white/10 bg-white/[0.03] px-3 py-3">
         <p className="text-[11px] uppercase tracking-[0.12em] text-[#f0ddd6]/55">
             {compactLabel(label)}
         </p>

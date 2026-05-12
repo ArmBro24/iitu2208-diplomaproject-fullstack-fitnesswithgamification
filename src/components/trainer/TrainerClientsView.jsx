@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { FiChevronRight, FiSearch } from 'react-icons/fi';
+import { FiArrowLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
 import avatarMe from '../../assets/avatars/avatar-me.png';
 
 const TrainerClientsView = ({
     clients,
+    onBack,
     onOpenDetails,
     setSelectedClientId,
 }) => {
@@ -32,8 +33,18 @@ const TrainerClientsView = ({
     return (
         <div className="px-4 pb-20 pt-5 sm:px-6 md:px-8 md:pb-10 md:pt-7 lg:px-12 lg:py-10">
             <div className="mx-auto max-w-[880px]">
-                <header className="flex items-center justify-center">
+                <header className="flex items-center justify-between">
+                    <button
+                        onClick={onBack}
+                        aria-label="Back"
+                        className="rounded-full p-2 text-[#eee7da] transition-colors hover:bg-white/10"
+                    >
+                        <FiArrowLeft size={26} />
+                    </button>
+
                     <h1 className="text-[1.8rem] font-medium tracking-tight text-white md:text-[2rem]">Clients</h1>
+
+                    <div className="w-10" />
                 </header>
 
                 <div className="mt-5 rounded-[26px] border border-white/10 bg-black/15 px-4 py-4 md:px-5">

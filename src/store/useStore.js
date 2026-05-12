@@ -6,6 +6,7 @@ import tr2 from '../assets/trainers/trainer2.jpg';
 import tr3 from '../assets/trainers/trainer3.jpg';
 import tr4 from '../assets/trainers/trainer4.jpg';
 import tr5 from '../assets/trainers/trainer5.jpg';
+import { getUserDisplayName, getUserNickname } from '../utils/userDisplay.js';
 
 const trainerImages = {
     1: tr1, 2: tr2, 3: tr3, 4: tr4, 5: tr5
@@ -22,7 +23,7 @@ const useStore = create((set, _get) => ({
         email: null
     },
     trainers: [],
-    userStats: { points: 288, level: 12, endurance: 89, consistency: 96, motivation: 103, nickname: "Hero_One" },
+    userStats: { points: 288, level: 12, endurance: 89, consistency: 96, motivation: 103 },
     coachContract: { trainerId: null, status: 'none' },
     subscription: { subId: null, status: 'none' },
     challenges: [
@@ -162,8 +163,8 @@ const useStore = create((set, _get) => ({
 
             const realTrainers = response.data.map(u => ({
                 id: u.id,
-                name: u.email.split('@')[0],
-                surname: "Coach",
+                name: getUserDisplayName(u),
+                surname: u.nickname ? getUserNickname(u) : "Coach",
                 img: trainerImages[u.id] || tr1,
                 points: 0,
                 phone: "+7 (777) 000 00 00",
@@ -191,7 +192,16 @@ const useStore = create((set, _get) => ({
     createTraining: async (trainingData) => {
         try {
             const token = localStorage.getItem('token');
+            const tokenRole = getTokenRole(token);
             console.log("Auth Token present:", !!token);
+
+            if (!token) {
+                throw new Error('Please log in as a trainer before assigning workouts.');
+            }
+
+            if (tokenRole && tokenRole !== 'COACH') {
+                throw new Error('Workout assignment is available only for trainer accounts. Please log out and sign in as a trainer.');
+            }
 
             const response = await axios.post(`${API_BASE_URL}/sessions`, trainingData, {
                 headers: {
@@ -205,11 +215,19 @@ const useStore = create((set, _get) => ({
             }));
 
             alert("Workout assigned successfully!");
+            return response.data;
         } catch (error) {
             if (error.response && error.response.data) {
                 console.error("Backend Error Details:", error.response.data);
             }
             console.error("Full Error object:", error);
+            if (error.response?.status === 403) {
+                throw new Error('Server rejected the request because the current token is not a trainer token. Please log out and sign in as a trainer.');
+            }
+            if (error.response?.status === 401) {
+                throw new Error('Your session expired. Please log in again as a trainer.');
+            }
+            throw error;
         }
     },
 
@@ -275,5 +293,19 @@ const useStore = create((set, _get) => ({
     setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
     setSelectedTraining: (training) => set({ selectedTraining: training })
 }));
+
+const getTokenRole = (token) => {
+    if (!token) return null;
+
+    try {
+        const payload = token.split('.')[1];
+        const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(normalizedPayload));
+        return String(decoded.role ?? '').toUpperCase();
+    } catch (error) {
+        console.warn('Could not decode auth token role:', error);
+        return null;
+    }
+};
 
 export default useStore;

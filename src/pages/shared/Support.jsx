@@ -20,6 +20,7 @@ const Support = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const backPath = location.state?.backPath ?? getSharedBackPath();
+    const backState = location.state?.trainerView ? { trainerView: location.state.trainerView } : undefined;
     const activeRole = getActiveRole();
     const isTrainerMode = activeRole === 'coach' || activeRole === 'trainer' || backPath === '/trainer/dashboard';
 
@@ -66,7 +67,7 @@ const Support = () => {
 
                 <nav className={`relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'md:pl-24' : ''}`}>
                     <button
-                        onClick={() => navigate(backPath)}
+                        onClick={() => navigate(backPath, backState ? { state: backState } : undefined)}
                         aria-label="Back"
                         className="rounded-xl border border-white/10 bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 active:scale-95 md:rounded-2xl md:p-3 md:text-3xl"
                     >

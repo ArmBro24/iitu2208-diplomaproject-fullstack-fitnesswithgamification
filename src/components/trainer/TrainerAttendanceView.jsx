@@ -53,7 +53,7 @@ const TrainerAttendanceView = ({ onBack, onOpenProfile, sessions, onChangeStatus
 };
 
 const AttendanceCard = ({ session, onChangeStatus }) => (
-    <div className="rounded-[28px] border border-white/10 bg-black/15 px-4 py-4 md:px-5">
+    <div className="rounded-[28px] border border-white/10 bg-black/15 px-4 py-4 transition-all hover:border-[#c1cf98]/35 hover:bg-white/10 md:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
                 <p className="text-[1.05rem] font-bold text-[#f5f1ea]">{session.client}</p>
@@ -91,9 +91,9 @@ const AttendanceCard = ({ session, onChangeStatus }) => (
 
 const ActionButton = ({ active, label, onClick, tone }) => {
     const tones = {
-        success: active ? 'border-[#dce8c5] bg-[rgba(108,115,63,0.36)] text-white' : 'border-white/10 bg-white/5 text-white/70',
-        danger: active ? 'border-[#ffb5b5] bg-[rgba(120,71,91,0.42)] text-white' : 'border-white/10 bg-white/5 text-white/70',
-        warning: active ? 'border-[#f0dd95] bg-[rgba(122,95,42,0.34)] text-white' : 'border-white/10 bg-white/5 text-white/70',
+        success: active ? 'border-[#c1cf98]/40 bg-[#c1cf98]/12 text-[#eef2d7]' : 'border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8',
+        danger: active ? 'border-[#ff8383]/40 bg-[#ff8383]/12 text-[#ffdada]' : 'border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8',
+        warning: active ? 'border-[#f0dd95]/40 bg-[#f0dd95]/12 text-[#f5e6bf]' : 'border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8',
     };
 
     return (

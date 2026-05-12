@@ -66,8 +66,8 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                 planned: Number(ex.planned),
                 done: 0
             })),
-            startsAt: startDate.toISOString().split('.')[0],
-            endsAt: endDate.toISOString().split('.')[0]
+            startsAt: formatLocalDateTime(startDate),
+            endsAt: formatLocalDateTime(endDate)
         };
 
         console.log("🚀 SENDING PAYLOAD:", payload);
@@ -89,7 +89,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                 </header>
 
                 <div className="mt-6 grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-                    <div className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-5 md:p-6 h-fit">
+                    <div className="h-fit rounded-[28px] border border-white/10 bg-black/15 p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
                         <div className="flex items-center gap-4">
                             <div className="h-[84px] w-[84px] overflow-hidden rounded-full border border-white/15 bg-neutral-800">
                                 <img src={avatarMe} alt={selectedClient.name} className="h-full w-full object-cover p-1" />
@@ -105,7 +105,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                         </div>
                     </div>
 
-                    <div className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-5 md:p-6">
+                    <div className="rounded-[28px] border border-white/10 bg-black/15 p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
                         <div className="grid gap-6">
                             <Field label="Workout template">
                                 <div className="flex flex-wrap gap-2">
@@ -115,8 +115,8 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                                             onClick={() => handleTemplateChange(template)}
                                             className={`rounded-xl border px-4 py-2 text-sm transition-all ${
                                                 selectedTemplateName === template.name
-                                                    ? 'border-[#dce8c5] bg-[#c1cf98]/20 text-white'
-                                                    : 'border-white/10 text-white/60 hover:bg-white/5'
+                                                    ? 'border-[#c1cf98]/40 bg-[#c1cf98]/12 text-[#eef2d7]'
+                                                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8'
                                             }`}
                                         >
                                             {template.name}
@@ -126,7 +126,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                             </Field>
 
                             <Field label="Exercises list">
-                                <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                                <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
                                     <div className="mb-2 flex text-[10px] uppercase tracking-wider text-white/30 px-2">
                                         <span className="flex-1">Exercise Name</span>
                                         <span className="w-20 text-center">Reps/Sec</span>
@@ -135,7 +135,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                                     <div className="grid gap-2">
                                         {exercises.map((ex, idx) => (
                                             <div key={idx}
-                                                 className="flex items-center gap-2 bg-white/5 p-2 rounded-lg group">
+                                                 className="group flex items-center gap-2 rounded-lg border border-white/10 bg-black/15 p-2">
                                                 <input
                                                     value={ex.name}
                                                     onChange={(e) => updateEx(idx, 'name', e.target.value)}
@@ -175,7 +175,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                                 />
                             </Field>
 
-                            <div className="mt-4 rounded-2xl border border-white/5 bg-black/20 p-4">
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-[10px] uppercase tracking-widest text-white/40">Expected Reward</span>
                                     <span className="text-[#c1cf98] font-bold">{points.total} PTS</span>
@@ -222,5 +222,11 @@ const Field = ({label, children}) => (
         {children}
     </div>
 );
+
+const formatLocalDateTime = (date) => {
+    const pad = (value) => String(value).padStart(2, '0');
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
 export default TrainerAssignWorkoutView;

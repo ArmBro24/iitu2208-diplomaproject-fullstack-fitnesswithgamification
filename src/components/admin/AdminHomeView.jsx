@@ -5,9 +5,17 @@ import coachesImg from '../../assets/coaches.png';
 import plansImg from '../../assets/plans.png';
 import { adminCalendarDays, adminHighlightDays, adminStats } from './adminData.js';
 import { AdminPanelCard, AdminSectionTitle, AdminStatChip } from './AdminShared.jsx';
+import useStore from '../../store/useStore.js';
+import { getUserDisplayName, getUserInitials, getUserNickname } from '../../utils/userDisplay.js';
 
-const AdminHomeView = ({ onOpenMenu, onOpenUsers, onOpenSubscriptions, onOpenSupport }) => (
-    <div className="relative min-h-screen text-white font-rubik flex flex-col overflow-x-hidden">
+const AdminHomeView = ({ onOpenMenu, onOpenUsers, onOpenSubscriptions, onOpenSupport }) => {
+    const currentUser = useStore((state) => state.currentUser);
+    const displayName = getUserDisplayName(currentUser);
+    const nickname = getUserNickname(currentUser);
+    const initials = getUserInitials(currentUser);
+
+    return (
+        <div className="relative min-h-screen text-white font-rubik flex flex-col overflow-x-hidden">
         <div className="relative z-10 grid w-full flex-grow gap-4 px-4 pb-8 pt-5 md:px-8 md:pb-10 lg:grid-cols-[0.92fr_1.08fr] lg:grid-rows-[auto_1fr] lg:gap-6 lg:px-10 lg:pt-8">
             <nav className="col-span-full flex items-center justify-between">
                 <button
@@ -19,8 +27,14 @@ const AdminHomeView = ({ onOpenMenu, onOpenUsers, onOpenSubscriptions, onOpenSup
 
                 <h1 className="text-3xl font-black tracking-tight text-[#c1cf98] md:text-5xl">HeroFit</h1>
 
-                <div className="rounded-2xl bg-white/5 p-3">
-                    <FiShield className="text-[#c1cf98]" size={24} />
+                <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-white/5 px-3 py-2">
+                    <div className="hidden min-w-0 text-right sm:block">
+                        <p className="truncate text-sm font-bold text-white">{displayName}</p>
+                        <p className="truncate text-xs text-[#c1cf98]/75">{nickname}</p>
+                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c1cf98]/30 bg-[#c1cf98]/10 text-sm font-black text-[#c1cf98]">
+                        {initials}
+                    </div>
                 </div>
             </nav>
 
@@ -114,7 +128,8 @@ const AdminHomeView = ({ onOpenMenu, onOpenUsers, onOpenSubscriptions, onOpenSup
             </AdminPanelCard>
         </div>
     </div>
-);
+    );
+};
 
 const LegendDot = ({ color, label }) => (
     <span className="inline-flex items-center gap-2">

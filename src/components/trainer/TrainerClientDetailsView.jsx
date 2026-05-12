@@ -41,7 +41,7 @@ const TrainerClientDetailsView = ({
 
                 <div className="mt-6 grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
                     <div className="space-y-5">
-                        <div className="rounded-[30px] border border-white/10 bg-[rgba(15,16,18,0.16)] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
+                        <div className="rounded-[28px] border border-white/10 bg-black/15 p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
                             <p className="text-sm uppercase tracking-[0.18em] text-[#f0ddd6]/55">Profile</p>
                             <div className="mt-4 flex items-center gap-4">
                                 <div className="relative h-[88px] w-[88px] overflow-hidden rounded-full border border-white/15 bg-[radial-gradient(circle_at_30%_30%,#f19add,#704436)]">
@@ -60,7 +60,7 @@ const TrainerClientDetailsView = ({
                                 <InfoBox label="Status" value={selectedClient.status} />
                             </div>
 
-                            <div className="mt-5 rounded-[24px] bg-[rgba(108,115,63,0.3)] px-4 py-4">
+                            <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Next Workout</p>
                                 <p className="mt-3 text-[1.1rem] font-semibold text-[#f8efe4]">
                                     {nextWorkout
@@ -69,7 +69,7 @@ const TrainerClientDetailsView = ({
                                 </p>
                             </div>
 
-                            <div className="mt-5 rounded-[24px] bg-[rgba(121,76,89,0.24)] px-4 py-4">
+                            <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-[#f0ddd6]/60">Progress request</p>
                                 <div className="mt-3 flex flex-col gap-2">
                                     {pendingRequests.length > 0 ? (
@@ -135,11 +135,11 @@ const TrainerClientDetailsView = ({
                         </SectionCard>
                         <SectionCard title="Trainer Actions">
                             <div className="space-y-3">
-                                <button onClick={onAssignWorkout} className="flex w-full items-center justify-between rounded-[24px] border border-[#dce8c5] bg-[rgba(121,76,89,0.34)] px-5 py-4 text-left text-white">
+                                <button onClick={onAssignWorkout} className="flex w-full items-center justify-between rounded-[24px] border border-[#c1cf98]/35 bg-[#c1cf98]/10 px-5 py-4 text-left text-white transition-all hover:bg-white/10">
                                     <span className="font-medium">Assign workout</span>
                                     <FiChevronRight size={18} />
                                 </button>
-                                <button onClick={() => onRequestProgressUpdate(selectedClient.id)} className={`flex w-full items-center justify-between rounded-[24px] border px-5 py-4 text-left ${selectedClient.progressRequestPending ? 'border-[#f0dd95]/35 bg-[rgba(122,95,42,0.22)] text-[#f5e6bf]' : 'border-white/10 bg-black/15 text-[#f0e4dc]'}`}>
+                                <button onClick={() => onRequestProgressUpdate(selectedClient.id)} className={`flex w-full items-center justify-between rounded-[24px] border px-5 py-4 text-left transition-all hover:bg-white/10 ${selectedClient.progressRequestPending ? 'border-[#f0dd95]/35 bg-[#f0dd95]/10 text-[#f5e6bf]' : 'border-white/10 bg-black/15 text-[#f0e4dc]'}`}>
                                     <span className="font-medium">{selectedClient.progressRequestPending ? 'Progress request sent' : 'Request progress update'}</span>
                                     <FiTrendingUp size={18} />
                                 </button>

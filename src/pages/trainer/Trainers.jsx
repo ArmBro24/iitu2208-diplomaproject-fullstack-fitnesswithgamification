@@ -115,7 +115,8 @@ const Trainers = ({ onLogout }) => {
 
     const handleAssignWorkout = async (data) => {
         try {
-            await createTraining(data);
+            const createdSession = await createTraining(data);
+            const scheduleItem = mapTrainingSessionToScheduleItem(createdSession ?? data, clients);
 
             setClients((currentClients) =>
                 currentClients.map((item) =>
@@ -125,10 +126,13 @@ const Trainers = ({ onLogout }) => {
                 )
             );
 
+            setScheduleItems((current) => upsertById(current, scheduleItem));
+            setAssignedWorkouts((current) => upsertById(current, scheduleItem));
+
             setView('schedule');
         } catch (error) {
             console.error("Failed to assign workout:", error);
-            alert("Ошибка при сохранении тренировки на сервере.");
+            alert(error.message || "Failed to save workout on the server.");
         }
     };
 
@@ -287,6 +291,7 @@ const Trainers = ({ onLogout }) => {
 
                             {view === 'clients' && clientsSubView === 'list' && (
                                 <TrainerClientsView
+                                    onBack={() => setView('dashboard')}
                                     onOpenDetails={openClientDetails}
                                     clients={clients}
                                     setSelectedClientId={setSelectedClientId}
@@ -348,5 +353,55 @@ const formatRequestTimestamp = () =>
         day: 'numeric',
         year: 'numeric',
     }).format(new Date());
+
+const upsertById = (items, nextItem) => {
+    const exists = items.some((item) => item.id === nextItem.id);
+    if (exists) {
+        return items.map((item) => item.id === nextItem.id ? { ...item, ...nextItem } : item);
+    }
+
+    return [nextItem, ...items];
+};
+
+const mapTrainingSessionToScheduleItem = (session, clients) => {
+    const startsAt = session.startsAt;
+    const endsAt = session.endsAt;
+    const client = clients.find((item) => Number(item.id) === Number(session.memberId));
+    const startDate = startsAt ? new Date(startsAt) : null;
+    const endDate = endsAt ? new Date(endsAt) : null;
+
+    return {
+        id: session.id ?? `local-${session.memberId}-${session.startsAt}`,
+        name: session.title ?? session.name ?? 'Workout',
+        workout: session.title ?? session.workout ?? session.name ?? 'Workout',
+        client: client?.name ?? `User #${session.memberId}`,
+        memberId: session.memberId,
+        coachId: session.coachId,
+        startsAt,
+        endsAt,
+        time: formatSessionTime(startDate, endDate),
+        status: mapTrainingStatus(session.status),
+    };
+};
+
+const formatSessionTime = (startDate, endDate) => {
+    if (!startDate || Number.isNaN(startDate.getTime())) return 'Time not set';
+
+    const start = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const end = endDate && !Number.isNaN(endDate.getTime())
+        ? endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : null;
+
+    return end ? `${start} - ${end}` : start;
+};
+
+const mapTrainingStatus = (status) => {
+    const normalized = String(status ?? 'REQUESTED').toUpperCase();
+
+    if (normalized === 'MISSED') return 'missed';
+    if (normalized === 'ATTENDED' || normalized === 'COMPLETED' || normalized === 'CONFIRMED') return 'present';
+    if (normalized === 'LATE') return 'late';
+    return 'upcoming';
+};
 
 export default Trainers;
