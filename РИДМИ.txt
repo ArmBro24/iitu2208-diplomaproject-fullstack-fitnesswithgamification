@@ -11,29 +11,46 @@
 
 8. Create training session as COACH
    → status = REQUESTED
+   → сохранить sessionId
+   → сохранить exerciseIds из response
 
 9. Confirm training session as COACH
    PATCH /api/training/sessions/{sessionId}/status?status=CONFIRMED
 
 10. Submit log as MEMBER
     POST /api/training/logs
+    → обязательно передать sessionId, memberId, coachId
+    → если передаешь exercises, у каждого нужен id и done
+    → сохранить logId
 
 11. Approve log as COACH
     PATCH /api/training/logs/{logId}/approve
-
-11B. Reject log as COACH
-PATCH /api/training/logs/{logId}/reject
-
-Expected:
-status = REJECTED
-pointsAwarded = 0
-Kafka event НЕ уходит
-Gamification НЕ меняется
-Challenge НЕ меняется
+    → points > 0
+    → log = APPROVED
+    → session автоматически = COMPLETED
+    → Kafka event уходит
 
 12. Check gamification character
 
 13. Check challenge progress
 
 14. Check notifications
+
+
+
+11B. Negative test: Reject log as COACH
+
+A. Create another training session
+B. Confirm it
+C. Submit another log
+D. Reject this new log
+
+Expected:
+log status = REJECTED
+pointsAwarded = 0
+session НЕ становится COMPLETED
+Kafka event НЕ уходит
+Gamification НЕ меняется
+Challenge НЕ меняется
+
 ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 17.05.2026!!!
