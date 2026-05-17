@@ -1,15 +1,39 @@
 1. Register MEMBER
 2. Login MEMBER
+
 3. Register COACH
 4. Login COACH
+
 5. Create character
+
 6. Create challenge
 7. Join challenge
-8. Create training session as COACH
-9. Submit log as MEMBER
-10. Approve log as COACH
-11. Check gamification character
-12. Check challenge progress
-13. Check notifications
 
+8. Create training session as COACH
+   → status = REQUESTED
+
+9. Confirm training session as COACH
+   PATCH /api/training/sessions/{sessionId}/status?status=CONFIRMED
+
+10. Submit log as MEMBER
+    POST /api/training/logs
+
+11. Approve log as COACH
+    PATCH /api/training/logs/{logId}/approve
+
+11B. Reject log as COACH
+PATCH /api/training/logs/{logId}/reject
+
+Expected:
+status = REJECTED
+pointsAwarded = 0
+Kafka event НЕ уходит
+Gamification НЕ меняется
+Challenge НЕ меняется
+
+12. Check gamification character
+
+13. Check challenge progress
+
+14. Check notifications
 ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 17.05.2026!!!
