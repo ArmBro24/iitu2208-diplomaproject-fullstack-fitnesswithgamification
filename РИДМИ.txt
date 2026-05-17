@@ -1,0 +1,15 @@
+1. Register MEMBER
+2. Login MEMBER
+3. Register COACH
+4. Login COACH
+5. Create character
+6. Create challenge
+7. Join challenge
+8. Create training session as COACH
+9. Submit log as MEMBER
+10. Approve log as COACH
+11. Check gamification character
+12. Check challenge progress
+13. Check notifications
+
+ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 17.05.2026!!!
