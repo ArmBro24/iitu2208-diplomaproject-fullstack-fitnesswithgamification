@@ -9,8 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // Проверьте этот импорт
-
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
@@ -28,10 +27,26 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions").hasAnyAuthority("COACH", "ROLE_COACH")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions/**").hasAnyAuthority("COACH", "ROLE_COACH")
-                        .requestMatchers("/api/training/mentorship/**").authenticated()
-                        .anyRequest().authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/sessions/*/status")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/approve")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/reject")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/logs")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
+
+                        .requestMatchers("/api/training/mentorship/**")
+                        .authenticated()
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -42,7 +57,7 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // Ваш фронтенд
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 

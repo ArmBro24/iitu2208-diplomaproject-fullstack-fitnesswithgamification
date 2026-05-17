@@ -67,13 +67,29 @@ public class TrainingController {
                 .memberComment(req.memberComment())
                 .build();
 
-        return trainingSessionService.submitLog(log);
+        List<Exercise> submittedExercises = req.exercises() == null ? List.of() :
+                req.exercises().stream()
+                        .map(dto -> Exercise.builder()
+                                .id(dto.id())
+                                .name(dto.name())
+                                .planned(dto.planned())
+                                .done(dto.done())
+                                .build())
+                        .collect(Collectors.toList());
+
+        return trainingSessionService.submitLog(log, submittedExercises);
     }
 
     @PatchMapping("/logs/{logId}/approve")
     public SessionLog approveLog(@PathVariable Long logId,
                                  @RequestBody @Valid ApproveLogRequest req) {
         return trainingSessionService.approveLog(logId, req.points(), req.coachComment());
+    }
+
+    @PatchMapping("/logs/{logId}/reject")
+    public SessionLog rejectLog(@PathVariable Long logId,
+                                @RequestBody RejectLogRequest req) {
+        return trainingSessionService.rejectLog(logId, req.coachComment());
     }
 
     @PatchMapping("/sessions/{sessionId}/status")
