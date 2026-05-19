@@ -3,7 +3,7 @@ import express from 'express';
 import aiRoutes from './routes/ai.js';
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.AI_PORT || 8090;
 
 app.use(express.json());
 
