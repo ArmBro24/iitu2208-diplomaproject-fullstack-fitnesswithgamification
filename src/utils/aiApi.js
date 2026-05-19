@@ -22,10 +22,11 @@ const postJson = async (url, payload) => {
     return data;
 };
 
-export const sendAIChat = async ({ message, messages = [] }) => {
+export const sendAIChat = async ({ message, messages = [], userContext } = {}) => {
     const data = await postJson('/api/ai/chat', {
         message,
         messages: keepChatHistory(messages),
+        userContext,
     });
 
     return data.reply;

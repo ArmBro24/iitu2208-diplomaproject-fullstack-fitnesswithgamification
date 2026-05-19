@@ -143,10 +143,10 @@ const TrainerHomeView = ({
                     <button
                         type="button"
                         onClick={onOpenAIChat}
-                        className="mt-4 flex w-full items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-white/[0.05] p-5 text-left shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition-all hover:border-[#c1cf98]/45 hover:bg-white/[0.08] active:scale-[0.99] md:px-6"
+                        className="ai-assistant-card mt-4 flex w-full items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-white/[0.05] p-5 text-left shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-1 hover:border-[#c1cf98]/45 hover:bg-white/[0.08] active:scale-[0.99] md:px-6"
                     >
                         <div className="flex min-w-0 items-center gap-4">
-                            <div className="hidden h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-[#4087a1]/20 md:flex">
+                            <div className="ai-assistant-visual hidden h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-[#4087a1]/20 md:flex">
                                 <img src={aiChatImg} alt="AI Chat" className="h-16 w-16 object-contain" />
                             </div>
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiAward, FiCalendar, FiMenu, FiTrendingUp, FiUser, FiX, FiLogOut, FiZap } from 'react-icons/fi';
+import { FiAward, FiCalendar, FiMenu, FiMessageCircle, FiTrendingUp, FiUser, FiX, FiLogOut, FiZap } from 'react-icons/fi';
 import Calendar from '../../components/client/Calendar.jsx';
 import Background from '../../components/common/Background.jsx';
+import AIChat from '../../components/ai/AIChat.jsx';
+import aiChatImg from '../../assets/ai_chat_ill.png';
 import plansImg from '../../assets/plans.png';
 import coachesImg from '../../assets/coaches.png';
 import homeImg from '../../assets/home.png';
@@ -26,6 +28,7 @@ const ClientHome = () => {
     }, [userId]);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
     const navigate = useNavigate();
 
     const setSelectedTraining = useStore((state) => state.setSelectedTraining);
@@ -86,11 +89,11 @@ const ClientHome = () => {
                 <div className="relative z-10 grid w-full flex-grow
                     grid-cols-[0.8fr_1.2fr]
                     gap-x-4 gap-y-4 pb-8
-                    [grid-template-areas:'header_header''decor_decor''toptext_toptext''coaches_content''calendar_calendar']
+                    [grid-template-areas:'header_header''decor_decor''toptext_toptext''coaches_content''ai_ai''calendar_calendar']
                     md:gap-x-0 md:gap-y-5
                     md:grid-cols-[minmax(280px,_0.7fr)_1.6fr_min-content]
-                    md:[grid-template-rows:auto_min-content_min-content_1fr]
-                    md:[grid-template-areas:'header_header_header''text1_text1_plans''coaches_text2_text2''coaches_calendar_calendar']"
+                    md:[grid-template-rows:auto_min-content_min-content_min-content_1fr]
+                    md:[grid-template-areas:'header_header_header''text1_text1_plans''coaches_text2_text2''coaches_ai_ai''coaches_calendar_calendar']"
                 >
 
                     {/* Хедер */}
@@ -226,6 +229,35 @@ const ClientHome = () => {
                     </div>
 
                     {/* Календарь */}
+                    <button
+                        type="button"
+                        onClick={() => setIsAIChatOpen(true)}
+                        className="ai-assistant-card mx-4 flex items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-white/[0.05] p-5 text-left shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-1 hover:border-[#c1cf98]/45 hover:bg-white/[0.08] active:scale-[0.99] [grid-area:ai] md:mx-0 md:ml-8 md:mr-10 md:px-6"
+                    >
+                        <div className="flex min-w-0 items-center gap-4">
+                            <div className="ai-assistant-visual hidden h-20 w-20 shrink-0 items-center justify-center rounded-[24px] bg-[#4087a1]/20 md:flex">
+                                <img src={aiChatImg} alt="AI Chat" className="h-16 w-16 object-contain" />
+                            </div>
+
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <FiMessageCircle className="text-[#c1cf98]" size={18} />
+                                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-white/45">Ai Chat</p>
+                                </div>
+                                <h3 className="mt-2 font-rubik text-[1.35rem] font-bold text-[#f5efe7] md:text-[1.55rem]">
+                                    Personal coach
+                                </h3>
+                                <p className="mt-1 max-w-[620px] text-sm leading-relaxed text-white/55">
+                                    Ask what to train today based on your profile, sessions, progress, and HeroFit points.
+                                </p>
+                            </div>
+                        </div>
+
+                        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c1cf98]/30 bg-[#c1cf98]/10 text-[#eaf2cf]">
+                            <FiTrendingUp size={18} />
+                        </span>
+                    </button>
+
                     <div className="mt-2 flex items-end md:mt-0 md:min-h-0 [grid-area:calendar]">
                         <div className="w-[90%] overflow-hidden rounded-tr-[34px] border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.25)] md:w-full md:rounded-tl-[56px]">
                             <Calendar
@@ -239,6 +271,10 @@ const ClientHome = () => {
                         </div>
                     </div>
                 </div>
+
+                {isAIChatOpen && (
+                    <AIChat onClose={() => setIsAIChatOpen(false)} />
+                )}
             </div>
         </Background>
     );

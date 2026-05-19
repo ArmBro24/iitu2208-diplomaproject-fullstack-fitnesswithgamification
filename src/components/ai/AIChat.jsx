@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FiSend, FiX } from 'react-icons/fi';
 import { sendAIChat } from '../../utils/aiApi.js';
+import {
+    collectHeroFitAIContext,
+    isAIProfileRefreshDue,
+    isAIProfileSetupComplete,
+    loadAIProfileMemory,
+    saveAIProfileMemory,
+} from '../../utils/aiContext.js';
+import useStore from '../../store/useStore.js';
 
 const initialMessages = [
     {
@@ -9,15 +17,61 @@ const initialMessages = [
     },
 ];
 
-const AIChat = ({ onClose }) => {
+const emptyProfileForm = {
+    height: '',
+    weight: '',
+    fitnessGoal: '',
+    trainingLevel: '',
+    limitations: '',
+};
+
+const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) => {
+    const { currentUser, userStats, challenges, sessions } = useStore();
     const [messages, setMessages] = useState(initialMessages);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [aiProfileMemory, setAIProfileMemory] = useState(() => loadAIProfileMemory());
+    const [profileForm, setProfileForm] = useState(() => ({
+        ...emptyProfileForm,
+        ...(loadAIProfileMemory() ?? {}),
+    }));
+    const [showProfileSetup, setShowProfileSetup] = useState(() => !isAIProfileSetupComplete() && !selectedClient);
+    const [showRefreshPrompt, setShowRefreshPrompt] = useState(() => isAIProfileRefreshDue() && !selectedClient);
+    const [refreshWeight, setRefreshWeight] = useState(() => loadAIProfileMemory()?.weight ?? '');
     const bottomRef = useRef(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading]);
+
+    const updateProfileField = (field, value) => {
+        setProfileForm((current) => ({
+            ...current,
+            [field]: value,
+        }));
+    };
+
+    const handleSaveProfile = (event) => {
+        event.preventDefault();
+        const savedProfile = saveAIProfileMemory(profileForm);
+        setAIProfileMemory(savedProfile);
+        setProfileForm({ ...emptyProfileForm, ...savedProfile });
+        setRefreshWeight(savedProfile?.weight ?? '');
+        setShowProfileSetup(false);
+        setShowRefreshPrompt(false);
+    };
+
+    const handleSaveWeightRefresh = () => {
+        const savedProfile = saveAIProfileMemory({ weight: refreshWeight });
+        setAIProfileMemory(savedProfile);
+        setProfileForm({ ...emptyProfileForm, ...savedProfile });
+        setShowRefreshPrompt(false);
+    };
+
+    const handleSkipProfileSetup = () => {
+        setShowProfileSetup(false);
+        setShowRefreshPrompt(false);
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -31,12 +85,22 @@ const AIChat = ({ onClose }) => {
         setIsLoading(true);
 
         try {
-            const reply = await sendAIChat({ message: text, messages });
+            const userContext = collectHeroFitAIContext({
+                currentUser,
+                userStats,
+                challenges,
+                sessions,
+                selectedClient,
+                assignedWorkouts,
+                scheduleItems,
+                aiProfileMemory,
+            });
+            const reply = await sendAIChat({ message: text, messages, userContext });
             setMessages([...nextMessages, { role: 'assistant', content: reply }]);
-        } catch (error) {
+        } catch {
             setMessages([
                 ...nextMessages,
-                { role: 'assistant', content: error.message || 'AI assistant is unavailable right now.' },
+                { role: 'assistant', content: 'AI assistant is unavailable right now.' },
             ]);
         } finally {
             setIsLoading(false);
@@ -62,6 +126,24 @@ const AIChat = ({ onClose }) => {
                 </header>
 
                 <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                    {showProfileSetup && (
+                        <ProfileSetupForm
+                            profileForm={profileForm}
+                            onChange={updateProfileField}
+                            onSave={handleSaveProfile}
+                            onSkip={handleSkipProfileSetup}
+                        />
+                    )}
+
+                    {!showProfileSetup && showRefreshPrompt && (
+                        <WeightRefreshPrompt
+                            weight={refreshWeight}
+                            onChange={setRefreshWeight}
+                            onSave={handleSaveWeightRefresh}
+                            onDismiss={() => setShowRefreshPrompt(false)}
+                        />
+                    )}
+
                     {messages.map((message, index) => (
                         <div
                             key={`${message.role}-${index}`}
@@ -109,5 +191,113 @@ const AIChat = ({ onClose }) => {
         </div>
     );
 };
+
+const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
+    <form onSubmit={onSave} className="rounded-[24px] border border-[#c1cf98]/20 bg-[#c1cf98]/[0.06] p-4">
+        <p className="text-sm font-bold text-[#f5efe7]">Personalize your AI coach</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/50">
+            Add your basic parameters once, and HeroFit will remember them for future recommendations.
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+            <ProfileInput
+                label="Height cm"
+                value={profileForm.height}
+                onChange={(value) => onChange('height', value)}
+                type="number"
+            />
+            <ProfileInput
+                label="Weight kg"
+                value={profileForm.weight}
+                onChange={(value) => onChange('weight', value)}
+                type="number"
+            />
+        </div>
+
+        <div className="mt-3 grid gap-3">
+            <ProfileInput
+                label="Goal"
+                value={profileForm.fitnessGoal}
+                onChange={(value) => onChange('fitnessGoal', value)}
+                placeholder="strength, weight loss, endurance..."
+            />
+            <ProfileInput
+                label="Training level"
+                value={profileForm.trainingLevel}
+                onChange={(value) => onChange('trainingLevel', value)}
+                placeholder="beginner, intermediate..."
+            />
+            <ProfileInput
+                label="Limitations or injuries"
+                value={profileForm.limitations}
+                onChange={(value) => onChange('limitations', value)}
+                placeholder="optional"
+            />
+        </div>
+
+        <div className="mt-4 flex gap-2">
+            <button
+                type="submit"
+                className="flex-1 rounded-full border border-[#c1cf98]/30 bg-[#c1cf98]/15 px-4 py-2 text-sm font-semibold text-[#eaf2cf] transition-all hover:bg-[#c1cf98]/25"
+            >
+                Save profile
+            </button>
+            <button
+                type="button"
+                onClick={onSkip}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 transition-all hover:bg-white/10"
+            >
+                Skip
+            </button>
+        </div>
+    </form>
+);
+
+const WeightRefreshPrompt = ({ weight, onChange, onSave, onDismiss }) => (
+    <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
+        <p className="text-sm font-bold text-[#f5efe7]">Quick profile update</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/50">
+            It has been about two weeks since your last weight update.
+        </p>
+        <div className="mt-3 flex gap-2">
+            <input
+                value={weight}
+                onChange={(event) => onChange(event.target.value)}
+                type="number"
+                placeholder="Weight kg"
+                className="min-w-0 flex-1 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#c1cf98]/50"
+            />
+            <button
+                type="button"
+                onClick={onSave}
+                className="rounded-full border border-[#c1cf98]/30 bg-[#c1cf98]/15 px-4 py-2 text-sm font-semibold text-[#eaf2cf]"
+            >
+                Save
+            </button>
+            <button
+                type="button"
+                onClick={onDismiss}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60"
+            >
+                Later
+            </button>
+        </div>
+    </div>
+);
+
+const ProfileInput = ({ label, value, onChange, type = 'text', placeholder }) => (
+    <label className="block">
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+            {label}
+        </span>
+        <input
+            value={value ?? ''}
+            onChange={(event) => onChange(event.target.value)}
+            type={type}
+            placeholder={placeholder}
+            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#c1cf98]/50"
+        />
+    </label>
+);
 
 export default AIChat;

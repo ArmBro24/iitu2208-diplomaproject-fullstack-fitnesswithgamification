@@ -15,6 +15,7 @@ const trainerImages = {
 const API_AUTH_URL = 'http://localhost:8080/api/users';
 const API_BASE_URL = 'http://localhost:8081/api/training';
 const API_MENTORSHIP_URL = 'http://localhost:8081/api/training/mentorship';
+const AI_PROFILE_STORAGE_KEY = 'herofit-ai-profile';
 
 const useStore = create((set, _get) => ({
     currentUser: {
@@ -39,7 +40,14 @@ const useStore = create((set, _get) => ({
     clients: [],
 
     logout: () => {
+        const aiProfileMemory = localStorage.getItem(AI_PROFILE_STORAGE_KEY);
+
         localStorage.clear();
+
+        if (aiProfileMemory) {
+            localStorage.setItem(AI_PROFILE_STORAGE_KEY, aiProfileMemory);
+        }
+
         set({
             currentUser: { id: null, role: null, email: null },
             sessions: [],
@@ -83,7 +91,7 @@ const useStore = create((set, _get) => ({
                         }
                     });
                 }
-            } catch (e) {
+            } catch {
                 console.log("No coach assigned yet in Training Service");
                 set({ coachContract: { trainerId: null, status: 'none' } });
             }

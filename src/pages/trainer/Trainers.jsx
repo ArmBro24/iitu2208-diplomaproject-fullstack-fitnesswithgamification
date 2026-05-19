@@ -326,7 +326,12 @@ const Trainers = ({ onLogout }) => {
                         </main>
 
                         {isAIChatOpen && (
-                            <AIChat onClose={() => setIsAIChatOpen(false)} />
+                            <AIChat
+                                onClose={() => setIsAIChatOpen(false)}
+                                selectedClient={selectedClient}
+                                assignedWorkouts={assignedWorkouts}
+                                scheduleItems={scheduleItems}
+                            />
                         )}
 
                     </div>
