@@ -28,9 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions").hasAnyAuthority("COACH", "ROLE_COACH")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions/**").hasAnyAuthority("COACH", "ROLE_COACH")
-                        .requestMatchers("/api/training/mentorship/**").authenticated()
+                        .requestMatchers("/api/notifications/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

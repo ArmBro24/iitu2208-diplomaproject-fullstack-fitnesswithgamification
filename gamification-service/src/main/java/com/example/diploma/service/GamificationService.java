@@ -9,6 +9,8 @@ public interface GamificationService {
 
     Character applyPoints(Long memberId, Integer delta, String comment);
 
+    Character applyTrainingPoints(Long sessionId, Long memberId, Integer points, String comment);
+
     PointsLedger addLedgerEntry(PointsLedger entry);
 
     Character getCharacter(Long memberId);

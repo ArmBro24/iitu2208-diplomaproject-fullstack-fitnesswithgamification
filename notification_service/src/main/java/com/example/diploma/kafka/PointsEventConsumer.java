@@ -16,7 +16,10 @@ public class PointsEventConsumer {
 
     private final NotificationService notificationService;
 
-    @KafkaListener(topics = KafkaTopics.POINTS_AWARDED)
+    @KafkaListener(
+            topics = KafkaTopics.POINTS_AWARDED,
+            containerFactory = "pointsAwardedKafkaListenerContainerFactory"
+    )
     public void handle(PointsAwardedEvent event) {
 
         log.info("NOTIFICATION RECEIVED: memberId={}, points={}",

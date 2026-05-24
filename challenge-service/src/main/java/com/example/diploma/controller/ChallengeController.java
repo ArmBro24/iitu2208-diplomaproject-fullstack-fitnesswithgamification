@@ -6,6 +6,7 @@ import com.example.diploma.controller.dto.JoinChallengeRequest;
 import com.example.diploma.model.Challenge;
 import com.example.diploma.model.ChallengeParticipant;
 import com.example.diploma.service.ChallengeService;
+import com.example.diploma.model.enums.ChallengeStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,12 @@ public class ChallengeController {
                 .build();
 
         return challengeService.createChallenge(challenge);
+    }
+
+    @PatchMapping("/{challengeId}/status")
+    public Challenge updateChallengeStatus(@PathVariable Long challengeId,
+                                           @RequestParam ChallengeStatus status) {
+        return challengeService.updateChallengeStatus(challengeId, status);
     }
 
     @PostMapping("/join")

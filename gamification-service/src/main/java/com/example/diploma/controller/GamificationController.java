@@ -27,8 +27,8 @@ public class GamificationController {
     }
 
     @PatchMapping("/characters/{memberId}/points")
-    public Character adjustPoints(@PathVariable Long memberId,
-                                  @RequestBody @Valid AdjustPointsRequest req) {
+    public Character applyPoints(@PathVariable Long memberId,
+                                 @RequestBody @Valid AdjustPointsRequest req) {
         return gamificationService.applyPoints(memberId, req.delta(), req.comment());
     }
 

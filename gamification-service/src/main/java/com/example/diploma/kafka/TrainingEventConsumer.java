@@ -24,10 +24,13 @@ public class TrainingEventConsumer {
                 event.approvedAt()
         );
 
-        // начисляем очки в Character + пишем запись в ledger
         String comment = "Approved training log. sessionId=" + event.sessionId();
 
-        // это начисление именно из тренировки → delta = points
-        gamificationService.applyPoints(event.memberId(), event.points(), comment);
+        gamificationService.applyTrainingPoints(
+                event.sessionId(),
+                event.memberId(),
+                event.points(),
+                comment
+        );
     }
 }

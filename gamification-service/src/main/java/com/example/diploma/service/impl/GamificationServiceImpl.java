@@ -25,13 +25,12 @@ public class GamificationServiceImpl implements GamificationService {
 
     @Override
     public Character createCharacter(Character character) {
+        if (character.getMemberId() == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
 
-        // без кастомных finder-ов: проверяем через findAll()
-        boolean exists = characterRepository.findAll().stream()
-                .anyMatch(c -> c.getMemberId().equals(character.getMemberId()));
-
-        if (exists) {
-            throw new IllegalStateException("Character already exists for memberId=" + character.getMemberId());
+        if (characterRepository.existsByMemberId(character.getMemberId())) {
+            throw new IllegalStateException("Character already exists for this member");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -49,11 +48,12 @@ public class GamificationServiceImpl implements GamificationService {
 
     @Override
     public Character applyPoints(Long memberId, Integer delta, String comment) {
+        if (memberId == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
 
-        Character existing = characterRepository.findAll().stream()
-                .filter(c -> c.getMemberId().equals(memberId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Character not found for memberId=" + memberId));
+        Character existing = characterRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Character not found for member: " + memberId));
 
         int safeDelta = (delta == null ? 0 : delta);
 
@@ -63,8 +63,7 @@ public class GamificationServiceImpl implements GamificationService {
         int xpAdd = Math.max(safeDelta, 0);
         int newXp = existing.getXp() + xpAdd;
 
-        // простая формула уровня (можешь потом заменить бизнес-логикой)
-        int newLevel = 1 + (newXp / 100);
+        int newLevel = calculateLevel(newXp);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -96,12 +95,98 @@ public class GamificationServiceImpl implements GamificationService {
         log.info("POINTS APPLIED: memberId={}, delta={}, totalPoints={}, xp={}, level={}",
                 memberId, safeDelta, saved.getTotalPoints(), saved.getXp(), saved.getLevel());
 
+        if (safeDelta > 0) {
+            pointsEventProducer.sendPointsAwarded(
+                    new PointsAwardedEvent(
+                            memberId,
+                            safeDelta,
+                            now
+                    )
+            );
+        }
+
+        return saved;
+    }
+
+    @Override
+    public Character applyTrainingPoints(Long sessionId, Long memberId, Integer points, String comment) {
+        if (sessionId == null) {
+            throw new IllegalArgumentException("Session id is required");
+        }
+
+        if (memberId == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        if (points == null || points <= 0) {
+            throw new IllegalArgumentException("Training points must be positive");
+        }
+
+        if (pointsLedgerRepository.existsBySessionId(sessionId)) {
+            log.info(
+                    "Training points for session {} already processed. Skipping duplicate event.",
+                    sessionId
+            );
+
+            return getCharacter(memberId);
+        }
+
+        Character character = characterRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Character not found for member: " + memberId));
+
+        int currentXp = character.getXp() != null ? character.getXp() : 0;
+        int currentTotalPoints = character.getTotalPoints() != null ? character.getTotalPoints() : 0;
+
+        int oldLevel = character.getLevel() != null ? character.getLevel() : 1;
+
+        int newXp = currentXp + points;
+        int newTotalPoints = currentTotalPoints + points;
+        int newLevel = calculateLevel(newXp);
+
+        Character updated = character.toBuilder()
+                .xp(newXp)
+                .totalPoints(newTotalPoints)
+                .level(newLevel)
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Character saved = characterRepository.save(updated);
+
+        if (newLevel > oldLevel) {
+            log.info(
+                    "LEVEL UP: memberId={}, oldLevel={}, newLevel={}, xp={}",
+                    memberId,
+                    oldLevel,
+                    newLevel,
+                    newXp
+            );
+        }
+
+        PointsLedger ledger = PointsLedger.builder()
+                .memberId(memberId)
+                .sessionId(sessionId)
+                .pointsAwarded(points)
+                .reason(PointsReason.FULL)
+                .comment(comment)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        pointsLedgerRepository.save(ledger);
+
         pointsEventProducer.sendPointsAwarded(
                 new PointsAwardedEvent(
                         memberId,
-                        safeDelta,
-                        now
+                        points,
+                        LocalDateTime.now()
                 )
+        );
+
+        log.info(
+                "Training points applied: sessionId={}, memberId={}, points={}, totalPoints={}",
+                sessionId,
+                memberId,
+                points,
+                saved.getTotalPoints()
         );
 
         return saved;
@@ -109,15 +194,36 @@ public class GamificationServiceImpl implements GamificationService {
 
     @Override
     public PointsLedger addLedgerEntry(PointsLedger entry) {
+        if (entry.getMemberId() == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        if (entry.getPointsAwarded() == null) {
+            throw new IllegalArgumentException("Points value is required");
+        }
+
+        if (entry.getCreatedAt() == null) {
+            entry = entry.toBuilder()
+                    .createdAt(LocalDateTime.now())
+                    .build();
+        }
+
         return pointsLedgerRepository.save(entry);
     }
 
     @Override
     public Character getCharacter(Long memberId) {
-        return characterRepository.findAll().stream()
-                .filter(c -> c.getMemberId().equals(memberId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Character not found"));
+        if (memberId == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        return characterRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Character not found for member: " + memberId));
+    }
+
+    private int calculateLevel(Integer xp) {
+        int safeXp = xp != null ? xp : 0;
+        return (safeXp / 100) + 1;
     }
 
 }

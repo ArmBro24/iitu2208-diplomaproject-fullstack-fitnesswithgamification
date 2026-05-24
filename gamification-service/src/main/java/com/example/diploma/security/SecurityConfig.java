@@ -21,10 +21,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // разреши health если есть
-                        .requestMatchers("/actuator/**").permitAll()
-                        // всё остальное ТОЛЬКО с токеном
-                        .anyRequest().authenticated()
+                        .requestMatchers("/actuator/**")
+                        .permitAll()
+
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/gamification/characters")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gamification/characters/*")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER", "COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/gamification/characters/*/points")
+                        .hasAnyAuthority("COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

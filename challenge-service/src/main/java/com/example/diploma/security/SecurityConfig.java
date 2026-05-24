@@ -21,10 +21,23 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // разреши health если есть
-                        .requestMatchers("/actuator/**").permitAll()
-                        // всё остальное ТОЛЬКО с токеном
-                        .anyRequest().authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/challenges")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/challenges/*/status")
+                        .hasAnyAuthority("COACH", "ROLE_COACH")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/challenges/join")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/challenges/member/*")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/challenges/*")
+                        .authenticated()
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

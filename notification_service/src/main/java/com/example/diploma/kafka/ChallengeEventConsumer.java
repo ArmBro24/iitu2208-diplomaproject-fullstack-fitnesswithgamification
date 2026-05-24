@@ -16,7 +16,10 @@ public class ChallengeEventConsumer {
 
     private final NotificationService notificationService;
 
-    @KafkaListener(topics = KafkaTopics.CHALLENGE_COMPLETED)
+    @KafkaListener(
+            topics = KafkaTopics.CHALLENGE_COMPLETED,
+            containerFactory = "challengeCompletedKafkaListenerContainerFactory"
+    )
     public void handle(ChallengeCompletedEvent event) {
 
         log.info("NOTIFICATION CHALLENGE COMPLETED: challengeId={}, memberId={}",

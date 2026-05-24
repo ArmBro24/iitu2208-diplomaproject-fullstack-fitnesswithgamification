@@ -1,56 +1,157 @@
 1. Register MEMBER
+   → сохранить memberId
+
 2. Login MEMBER
+   → сохранить memberToken
 
 3. Register COACH
+   → сохранить coachId
+
 4. Login COACH
+   → сохранить coachToken
 
 5. Create character
+   POST /api/gamification/characters
+   Token: MEMBER
+   → memberId
+   → level = 1
+   → xp = 0
+   → totalPoints = 0
 
 6. Create challenge
+   POST /api/challenges
+   Token: COACH
+   → status = DRAFT
+   → сохранить challengeId
+
+6.1 Activate challenge
+   PATCH /api/challenges/{challengeId}/status?status=ACTIVE
+   Token: COACH
+   → status = ACTIVE
+
 7. Join challenge
+   POST /api/challenges/join
+   Token: MEMBER
+   → работает только если challenge ACTIVE
+   → currentPoints = 0
+   → status = JOINED
 
 8. Create training session as COACH
+   POST /api/training/sessions
+   Token: COACH
    → status = REQUESTED
    → сохранить sessionId
    → сохранить exerciseIds из response
 
 9. Confirm training session as COACH
    PATCH /api/training/sessions/{sessionId}/status?status=CONFIRMED
+   Token: COACH
+   → status = CONFIRMED
 
 10. Submit log as MEMBER
-    POST /api/training/logs
-    → обязательно передать sessionId, memberId, coachId
-    → если передаешь exercises, у каждого нужен id и done
-    → сохранить logId
+   POST /api/training/logs
+   Token: MEMBER
+   → sessionId, memberId, coachId обязательны
+   → exercises: id + done
+   → сохранить logId
+   → log status = SUBMITTED
 
 11. Approve log as COACH
-    PATCH /api/training/logs/{logId}/approve
-    → points > 0
-    → log = APPROVED
-    → session автоматически = COMPLETED
-    → Kafka event уходит
+   PATCH /api/training/logs/{logId}/approve
+   Token: COACH
+   → points > 0
+   → log = APPROVED
+   → session автоматически = COMPLETED
+   → Kafka event training.log.approved уходит
 
 12. Check gamification character
+   GET /api/gamification/characters/{memberId}
+   Token: MEMBER
+   Expected:
+   → xp увеличился
+   → totalPoints увеличился
+   → level пересчитался
+   → duplicate sessionId не должен начисляться второй раз
 
 13. Check challenge progress
+   GET /api/challenges/member/{memberId}
+   Token: MEMBER
+   Expected:
+   → currentPoints увеличился
+   → progress не превышает targetPoints
+   → если targetPoints достигнут, status = COMPLETED
 
 14. Check notifications
+   GET /api/notifications/user/{memberId}
+   Token: MEMBER
+   Expected:
+   → Points awarded notification
+   → Challenge completed notification, если targetPoints достигнут
 
+NEGATIVE A
 
+A1. Create another training session
+    Token: COACH
+    → сохранить negativeSessionId / negativeExerciseId
 
-11B. Negative test: Reject log as COACH
+A2. Confirm it
+    PATCH /api/training/sessions/{negativeSessionId}/status?status=CONFIRMED
+    Token: COACH
 
-A. Create another training session
-B. Confirm it
-C. Submit another log
-D. Reject this new log
+A3. Submit another log
+    Token: MEMBER
+    → сохранить negativeLogId
+
+A4. Reject this log
+    PATCH /api/training/logs/{negativeLogId}/reject
+    Token: COACH
 
 Expected:
-log status = REJECTED
-pointsAwarded = 0
-session НЕ становится COMPLETED
-Kafka event НЕ уходит
-Gamification НЕ меняется
-Challenge НЕ меняется
+→ log status = REJECTED
+→ pointsAwarded = 0
+→ session НЕ становится COMPLETED
+→ Kafka training.log.approved НЕ уходит
+→ Gamification НЕ меняется
+→ Challenge НЕ меняется
+→ Notification по points НЕ создаётся
 
-ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 17.05.2026!!!
+NEGATIVE B
+
+B1. Попробовать повторно обработать тот же approved session/log event
+
+same sessionId в PointsLedger уже есть
+→ applyTrainingPoints пропускает повтор
+→ xp не увеличивается
+→ totalPoints не увеличивается
+→ points.awarded повторно не публикуется
+→ challenge progress не растёт второй раз
+
+{
+  "sessionId": 1,
+  "memberId": 1,
+  "points": 40,
+  "approvedAt": "2026-05-24T12:00:00"
+}
+
+Training points for session 1 already processed. Skipping duplicate event.
+
+NEGATIVE C
+
+PATCH /api/gamification/characters/{memberId}/points
+Token: COACH
+Body:
+{
+  "delta": -10,
+  "comment": "Penalty test"
+}
+
+→ totalPoints уменьшается
+→ xp не уменьшается
+→ ledger пишется как PENALTY
+→ points.awarded Kafka event НЕ уходит
+→ Challenge progress НЕ меняется
+
+
+
+
+ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 24.05.2026!!!

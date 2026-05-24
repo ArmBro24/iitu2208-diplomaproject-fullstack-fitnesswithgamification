@@ -27,6 +27,22 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     @Override
     public Challenge createChallenge(Challenge challenge) {
+        if (challenge.getTitle() == null || challenge.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Challenge title is required");
+        }
+
+        if (challenge.getTargetPoints() == null || challenge.getTargetPoints() <= 0) {
+            throw new IllegalArgumentException("Challenge target points must be positive");
+        }
+
+        if (challenge.getStartsAt() == null || challenge.getEndsAt() == null) {
+            throw new IllegalArgumentException("Challenge start and end time are required");
+        }
+
+        if (!challenge.getEndsAt().isAfter(challenge.getStartsAt())) {
+            throw new IllegalArgumentException("Challenge end time must be after start time");
+        }
+
         Challenge entity = challenge.toBuilder()
                 .status(ChallengeStatus.DRAFT)
                 .createdAt(LocalDateTime.now())
@@ -37,19 +53,65 @@ public class ChallengeServiceImpl implements ChallengeService {
     }
 
     @Override
-    public ChallengeParticipant joinChallenge(ChallengeParticipant participant) {
-        boolean exists = challengeParticipantRepository.findAll().stream()
-                .anyMatch(p -> p.getChallengeId().equals(participant.getChallengeId())
-                        && p.getMemberId().equals(participant.getMemberId()));
+    public Challenge updateChallengeStatus(Long challengeId, ChallengeStatus status) {
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
 
-        if (exists) {
+        ChallengeStatus currentStatus = challenge.getStatus();
+
+        if (!isValidChallengeStatusTransition(currentStatus, status)) {
+            throw new IllegalStateException(
+                    "Invalid challenge status transition: " + currentStatus + " -> " + status
+            );
+        }
+
+        if (status == ChallengeStatus.ACTIVE) {
+            validateChallengeCanBeActivated(challenge);
+        }
+
+        Challenge updated = challenge.toBuilder()
+                .status(status)
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Challenge saved = challengeRepository.save(updated);
+
+        if (status == ChallengeStatus.CLOSED) {
+            closeChallengeParticipants(saved.getId());
+        }
+
+        return saved;
+    }
+
+    @Override
+    public ChallengeParticipant joinChallenge(ChallengeParticipant participant) {
+        Challenge challenge = challengeRepository.findById(participant.getChallengeId())
+                .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
+
+        if (challenge.getStatus() != ChallengeStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Member can join only ACTIVE challenge. Current status: " + challenge.getStatus()
+            );
+        }
+
+        if (participant.getMemberId() == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        boolean alreadyJoined = challengeParticipantRepository.existsByChallengeIdAndMemberId(
+                participant.getChallengeId(),
+                participant.getMemberId()
+        );
+
+        if (alreadyJoined) {
             throw new IllegalStateException("Member already joined this challenge");
         }
 
         ChallengeParticipant entity = participant.toBuilder()
-                .currentPoints(0)
                 .status(ParticipantStatus.JOINED)
+                .currentPoints(0)
                 .joinedAt(LocalDateTime.now())
+                .completedAt(null)
                 .build();
 
         return challengeParticipantRepository.save(entity);
@@ -63,53 +125,74 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     @Override
     public List<ChallengeParticipant> getMemberChallenges(Long memberId) {
-        return challengeParticipantRepository.findAll().stream()
-                .filter(p -> p.getMemberId().equals(memberId))
-                .toList();
+        if (memberId == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        return challengeParticipantRepository.findAllByMemberId(memberId);
     }
 
     @Override
     public void applyProgress(Long memberId, Integer points) {
+        if (memberId == null) {
+            throw new IllegalArgumentException("Member id is required");
+        }
+
+        if (points == null || points <= 0) {
+            throw new IllegalArgumentException("Progress points must be positive");
+        }
 
         log.info("applyProgress start: memberId={}, points={}", memberId, points);
 
         List<ChallengeParticipant> participants =
-                challengeParticipantRepository.findAll().stream()
-                        .filter(p -> p.getMemberId().equals(memberId))
-                        .toList();
+                challengeParticipantRepository.findAllByMemberIdAndStatus(
+                        memberId,
+                        ParticipantStatus.JOINED
+                );
 
-        log.info("participants found: {}", participants.size());
+        log.info("active joined participants found: {}", participants.size());
 
-        for (ChallengeParticipant p : participants) {
-
-            if (p.getStatus() == ParticipantStatus.COMPLETED) continue;
-
-            log.info("before update: participantId={}, currentPoints={}", p.getId(), p.getCurrentPoints());
-
-            int newPoints = p.getCurrentPoints() + points;
-
-            Challenge challenge = challengeRepository.findById(p.getChallengeId())
+        for (ChallengeParticipant participant : participants) {
+            Challenge challenge = challengeRepository.findById(participant.getChallengeId())
                     .orElseThrow(() -> new IllegalArgumentException("Challenge not found"));
 
+            if (challenge.getStatus() != ChallengeStatus.ACTIVE) {
+                log.info(
+                        "Skipping participant {} because challenge {} is not ACTIVE. Current status: {}",
+                        participant.getId(),
+                        challenge.getId(),
+                        challenge.getStatus()
+                );
+                continue;
+            }
+
+            int currentPoints = participant.getCurrentPoints() != null
+                    ? participant.getCurrentPoints()
+                    : 0;
+
+            int calculatedPoints = currentPoints + points;
+            int newPoints = Math.min(calculatedPoints, challenge.getTargetPoints());
             boolean completed = newPoints >= challenge.getTargetPoints();
             LocalDateTime now = LocalDateTime.now();
 
-            ChallengeParticipant updated = p.toBuilder()
+            ChallengeParticipant updated = participant.toBuilder()
                     .currentPoints(newPoints)
                     .status(completed ? ParticipantStatus.COMPLETED : ParticipantStatus.JOINED)
-                    .completedAt(completed ? now : p.getCompletedAt())
+                    .completedAt(completed ? now : participant.getCompletedAt())
                     .build();
-
-            log.info("after update: participantId={}, currentPoints={}", updated.getId(), updated.getCurrentPoints());
 
             ChallengeParticipant saved = challengeParticipantRepository.save(updated);
 
-            log.info("participant saved: id={}, currentPoints={}", saved.getId(), saved.getCurrentPoints());
+            log.info(
+                    "challenge progress updated: participantId={}, challengeId={}, memberId={}, currentPoints={}, status={}",
+                    saved.getId(),
+                    saved.getChallengeId(),
+                    saved.getMemberId(),
+                    saved.getCurrentPoints(),
+                    saved.getStatus()
+            );
 
             if (completed) {
-                log.info("challenge completed: challengeId={}, memberId={}, finalPoints={}",
-                        saved.getChallengeId(), saved.getMemberId(), saved.getCurrentPoints());
-
                 challengeEventProducer.sendChallengeCompleted(
                         new ChallengeCompletedEvent(
                                 saved.getChallengeId(),
@@ -118,7 +201,82 @@ public class ChallengeServiceImpl implements ChallengeService {
                                 now
                         )
                 );
+
+                log.info(
+                        "challenge completed event sent: challengeId={}, memberId={}, finalPoints={}",
+                        saved.getChallengeId(),
+                        saved.getMemberId(),
+                        saved.getCurrentPoints()
+                );
             }
         }
+    }
+
+
+    private void closeChallengeParticipants(Long challengeId) {
+        List<ChallengeParticipant> participants =
+                challengeParticipantRepository.findAllByChallengeId(challengeId);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        for (ChallengeParticipant participant : participants) {
+
+            if (participant.getStatus() == ParticipantStatus.COMPLETED) {
+                continue;
+            }
+
+            ChallengeParticipant updatedParticipant = participant.toBuilder()
+                    .status(ParticipantStatus.COMPLETED)
+                    .completedAt(now)
+                    .build();
+
+            challengeParticipantRepository.save(updatedParticipant);
+
+            log.info(
+                    "participant {} completed because challenge {} was CLOSED",
+                    updatedParticipant.getId(),
+                    challengeId
+            );
+        }
+    }
+
+
+    private void validateChallengeCanBeActivated(Challenge challenge) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (challenge.getStartsAt() == null || challenge.getEndsAt() == null) {
+            throw new IllegalStateException("Challenge start and end time are required for activation");
+        }
+
+        if (!challenge.getEndsAt().isAfter(now)) {
+            throw new IllegalStateException("Cannot activate challenge that already ended");
+        }
+
+        if (!challenge.getEndsAt().isAfter(challenge.getStartsAt())) {
+            throw new IllegalStateException("Challenge end time must be after start time");
+        }
+
+        if (challenge.getTargetPoints() == null || challenge.getTargetPoints() <= 0) {
+            throw new IllegalStateException("Challenge target points must be positive");
+        }
+    }
+
+
+    private boolean isValidChallengeStatusTransition(
+            ChallengeStatus currentStatus,
+            ChallengeStatus newStatus
+    ) {
+        if (currentStatus == newStatus) {
+            return true;
+        }
+
+        return switch (currentStatus) {
+            case DRAFT -> newStatus == ChallengeStatus.ACTIVE
+                    || newStatus == ChallengeStatus.CLOSED;
+
+            case ACTIVE -> newStatus == ChallengeStatus.CLOSED;
+
+            case COMPLETED, CLOSED -> false;
+        };
     }
 }
