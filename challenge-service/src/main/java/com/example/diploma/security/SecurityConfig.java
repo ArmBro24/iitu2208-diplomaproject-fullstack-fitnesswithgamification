@@ -1,9 +1,9 @@
 package com.example.diploma.security;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,23 +21,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/challenges")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/challenges/*/status")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/challenges/join")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/challenges/member/*")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/challenges/*")
-                        .authenticated()
-
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers("/actuator/**", "/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/challenges/catalog").permitAll()
+                        .requestMatchers("/api/challenges/admin").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/challenges").hasAnyRole("ADMIN", "COACH")
+                        .requestMatchers(HttpMethod.PATCH, "/api/challenges/*/status").hasAnyRole("ADMIN", "COACH")
+                        .requestMatchers(HttpMethod.POST, "/api/challenges/join").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/challenges/*/leave").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.GET, "/api/challenges/member/*").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.GET, "/api/challenges/me").hasRole("MEMBER")
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -14,6 +14,8 @@ public interface ChallengeService {
 
     ChallengeParticipant joinChallenge(ChallengeParticipant participant);
 
+    ChallengeParticipant leaveChallenge(Long challengeId, Long memberId);
+
     Challenge getChallenge(Long id);
 
     List<ChallengeParticipant> getMemberChallenges(Long memberId);

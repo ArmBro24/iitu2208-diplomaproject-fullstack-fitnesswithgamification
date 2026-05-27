@@ -30,4 +30,12 @@ public class JwtService {
             throw new IllegalArgumentException("Invalid token");
         }
     }
+
+    public Long extractUserId(String token) {
+        Object userId = parse(token).get("userId");
+        if (userId == null) {
+            throw new IllegalArgumentException("Token does not contain a user id");
+        }
+        return userId instanceof Number number ? number.longValue() : Long.parseLong(userId.toString());
+    }
 }
