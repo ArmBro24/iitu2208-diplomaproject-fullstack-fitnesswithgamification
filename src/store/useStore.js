@@ -15,9 +15,53 @@ const trainerImages = {
 const API_AUTH_URL = 'http://localhost:8080/api/users';
 const API_BASE_URL = 'http://localhost:8081/api/training';
 const API_MENTORSHIP_URL = 'http://localhost:8081/api/training/mentorship';
+const API_CHALLENGES_URL = '/api/challenges';
 const AI_PROFILE_STORAGE_KEY = 'herofit-ai-profile';
 
-const useStore = create((set, _get) => ({
+const challengeColors = ['bg-red-900/40', 'bg-yellow-800/40', 'bg-blue-900/40', 'bg-green-900/40', 'bg-cyan-900/40'];
+
+const formatChallengeDate = (value) => {
+    if (!value) return 'Not set';
+    return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date(value));
+};
+
+const mapChallengeForClient = (challenge, index) => {
+    const participation = String(challenge.participationStatus ?? '').toUpperCase();
+    const now = new Date();
+    const startsAt = challenge.startsAt ? new Date(challenge.startsAt) : null;
+    const endsAt = challenge.endsAt ? new Date(challenge.endsAt) : null;
+    const phase = startsAt && startsAt > now
+        ? 'upcoming'
+        : endsAt && endsAt < now
+            ? 'ended'
+            : 'open';
+    const status = participation === 'JOINED'
+        ? 'active'
+        : participation === 'COMPLETED' || participation === 'LEFT'
+            ? 'completed'
+            : phase === 'upcoming'
+                ? 'upcoming'
+                : phase === 'ended'
+                    ? 'completed'
+                    : 'available';
+
+    return {
+        id: challenge.id,
+        title: challenge.title,
+        points: challenge.targetPoints,
+        desc: challenge.description || 'Complete this challenge to earn points.',
+        status,
+        result: participation === 'COMPLETED' ? 'success' : participation === 'LEFT' ? 'fail' : undefined,
+        phase,
+        startDate: formatChallengeDate(challenge.startsAt),
+        endDate: formatChallengeDate(challenge.endsAt),
+        currentPoints: challenge.currentPoints ?? 0,
+        progressPercent: Math.min(100, Math.round(((challenge.currentPoints ?? 0) / challenge.targetPoints) * 100)),
+        color: challengeColors[index % challengeColors.length]
+    };
+};
+
+const useStore = create((set, get) => ({
     currentUser: {
         id: localStorage.getItem('userId') || null,
         role: localStorage.getItem('activeRole') || null,
@@ -27,13 +71,8 @@ const useStore = create((set, _get) => ({
     userStats: { points: 288, level: 12, endurance: 89, consistency: 96, motivation: 103 },
     coachContract: { trainerId: null, status: 'none' },
     subscription: { subId: null, status: 'none' },
-    challenges: [
-        { id: 1, title: "No Skip", points: 100, desc: "Don't skip a single workout.", status: "available", color: "bg-red-900/40" },
-        { id: 2, title: "Early Bird", points: 50, desc: "Train before 10:00 AM.", status: "active", color: "bg-yellow-800/40" },
-        { id: 3, title: "Iron Core", points: 75, desc: "Perform 100 planks.", status: "available", color: "bg-blue-900/40" },
-        { id: 4, title: "Cardio King", points: 120, desc: "Run 50km total.", status: "completed", color: "bg-green-900/40" },
-        { id: 5, title: "Water Balance", points: 30, desc: "Drink 2L water daily.", status: "available", color: "bg-cyan-900/40" }
-    ],
+    challenges: [],
+    challengesLoading: false,
     selectedTrainer: null,
     selectedTraining: null,
     sessions: [],
@@ -52,6 +91,8 @@ const useStore = create((set, _get) => ({
             currentUser: { id: null, role: null, email: null },
             sessions: [],
             clients: [],
+            challenges: [],
+            challengesLoading: false,
             coachContract: { trainerId: null, status: 'none' },
             selectedTrainer: null,
             selectedTraining: null
@@ -197,6 +238,29 @@ const useStore = create((set, _get) => ({
         }
     },
 
+    fetchChallenges: async (memberId) => {
+        const token = localStorage.getItem('token');
+        set({ challengesLoading: true });
+        try {
+            const response = memberId && token
+                ? await axios.get(`${API_CHALLENGES_URL}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                : await axios.get(`${API_CHALLENGES_URL}/catalog`);
+            set({ challenges: response.data.map(mapChallengeForClient) });
+        } catch (error) {
+            console.error("Failed to fetch challenges:", error);
+            try {
+                const response = await axios.get(`${API_CHALLENGES_URL}/catalog`);
+                set({ challenges: response.data.map(mapChallengeForClient) });
+            } catch (catalogError) {
+                console.error("Failed to fetch published challenges:", catalogError);
+            }
+        } finally {
+            set({ challengesLoading: false });
+        }
+    },
+
     createTraining: async (trainingData) => {
         try {
             const token = localStorage.getItem('token');
@@ -284,19 +348,45 @@ const useStore = create((set, _get) => ({
         }
     },
 
-    acceptChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(ch =>
-            ch.id === id ? { ...ch, status: 'active', startDate: new Date().toLocaleDateString() } : ch
-        )
-    })),
-    completeChallenge: (id) => set((state) => {
-        const challenge = state.challenges.find(ch => ch.id === id);
-        if (!challenge) return state;
-        return {
-            userStats: { ...state.userStats, points: state.userStats.points + challenge.points },
-            challenges: state.challenges.map(ch => ch.id === id ? { ...ch, status: 'completed', result: 'success' } : ch)
-        };
-    }),
+    acceptChallenge: async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const memberId = localStorage.getItem('userId');
+            if (!memberId || !token) {
+                return { success: false, message: 'Please sign in before joining a challenge.' };
+            }
+
+            await axios.post(`${API_CHALLENGES_URL}/join`, {
+                challengeId: id
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await get().fetchChallenges(memberId);
+            return { success: true, message: 'Challenge accepted. Your progress is now being tracked.' };
+        } catch (error) {
+            console.error("Failed to accept challenge:", error);
+            return { success: false, message: getChallengeError(error, 'Could not accept this challenge.') };
+        }
+    },
+    failChallenge: async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const memberId = localStorage.getItem('userId');
+            if (!memberId || !token) {
+                return { success: false, message: 'Please sign in before changing a challenge.' };
+            }
+
+            await axios.patch(`${API_CHALLENGES_URL}/${id}/leave`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await get().fetchChallenges(memberId);
+            return { success: true, message: 'Challenge left. You can restart it while it is active.' };
+        } catch (error) {
+            console.error("Failed to leave challenge:", error);
+            return { success: false, message: getChallengeError(error, 'Could not leave this challenge.') };
+        }
+    },
+    retryChallenge: async (id) => get().acceptChallenge(id),
     setCoachContract: (contract) => set({ coachContract: contract }),
     setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
     setSelectedTraining: (training) => set({ selectedTraining: training })
@@ -315,5 +405,11 @@ const getTokenRole = (token) => {
         return null;
     }
 };
+
+const getChallengeError = (error, fallback) => (
+    error.response?.data?.detail
+    || error.response?.data?.message
+    || fallback
+);
 
 export default useStore;

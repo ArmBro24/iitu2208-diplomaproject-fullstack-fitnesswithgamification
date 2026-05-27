@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/ai': 'http://localhost:8090',
+      '/api/training': 'http://localhost:8081',
+      '/api/gamification': 'http://localhost:8082',
+      '/api/challenges': 'http://localhost:8083',
+      '/api/notifications': 'http://localhost:8084',
       '/api': 'http://localhost:8080',
     },
   },

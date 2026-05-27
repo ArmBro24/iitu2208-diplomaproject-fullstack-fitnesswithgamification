@@ -115,8 +115,7 @@ const ChallengePreview = ({ challenge }) => {
         );
     }
 
-    const isCompleted = challenge.status === 'completed';
-    const progress = isCompleted ? 100 : challenge.status === 'active' ? 62 : 18;
+    const progress = Number(challenge.progressPercent || 0);
 
     return (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c1cf98]/30 hover:bg-white/[0.07]">
@@ -132,6 +131,7 @@ const ChallengePreview = ({ challenge }) => {
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full bg-[#c1cf98]" style={{ width: `${progress}%` }} />
             </div>
+            <p className="mt-2 text-xs text-white/40">{challenge.currentPoints || 0} / {challenge.points} XP completed</p>
         </div>
     );
 };

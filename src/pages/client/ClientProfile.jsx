@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiAward, FiEdit3, FiLifeBuoy, FiMail, FiSettings, FiStar, FiUser, FiZap } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
@@ -11,10 +11,16 @@ import ProfileRpgProgress from '../../components/profile/ProfileRpgProgress.jsx'
 
 const ClientProfile = () => {
     const navigate = useNavigate();
-    const { challenges, currentUser, sessions, userStats } = useStore();
+    const { challenges, currentUser, sessions, userStats, fetchChallenges } = useStore();
     const displayName = getUserDisplayName(currentUser);
     const nickname = getUserNickname(currentUser);
     const initials = getUserInitials(currentUser);
+
+    useEffect(() => {
+        if (currentUser?.id) {
+            fetchChallenges(currentUser.id);
+        }
+    }, [currentUser?.id, fetchChallenges]);
 
     const stats = [
         { label: 'Points', value: userStats?.points || 0, icon: FiAward },

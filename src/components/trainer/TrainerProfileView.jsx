@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiArrowLeft, FiAward, FiEdit3, FiLifeBuoy, FiMail, FiSettings, FiStar, FiUser, FiUsers, FiZap } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import Background from '../../components/common/Background.jsx';
@@ -16,9 +16,16 @@ const TrainerProfileView = ({ onBack }) => {
     const challenges = useStore((state) => state.challenges);
     const clients = useStore((state) => state.clients);
     const sessions = useStore((state) => state.sessions);
+    const fetchChallenges = useStore((state) => state.fetchChallenges);
     const displayName = getUserDisplayName(currentUser);
     const nickname = getUserNickname(currentUser);
     const initials = getUserInitials(currentUser);
+
+    useEffect(() => {
+        if (currentUser?.id) {
+            fetchChallenges(currentUser.id);
+        }
+    }, [currentUser?.id, fetchChallenges]);
 
     const stats = [
         { label: 'Points', value: trainer.points, icon: FiAward },

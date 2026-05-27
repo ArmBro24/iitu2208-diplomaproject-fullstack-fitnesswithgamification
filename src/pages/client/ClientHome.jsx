@@ -13,6 +13,7 @@ import { setActiveRole } from '../../utils/roleRouting.js';
 
 const ClientHome = () => {
     const fetchSessions = useStore((state) => state.fetchSessions);
+    const fetchChallenges = useStore((state) => state.fetchChallenges);
     const challenges = useStore((state) => state.challenges);
     const userStats = useStore((state) => state.userStats);
     const userId = useStore((state) => state.currentUser.id);
@@ -24,8 +25,9 @@ const ClientHome = () => {
     useEffect(() => {
         if (userId) {
             fetchSessions(userId);
+            fetchChallenges(userId);
         }
-    }, [userId]);
+    }, [fetchChallenges, fetchSessions, userId]);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
