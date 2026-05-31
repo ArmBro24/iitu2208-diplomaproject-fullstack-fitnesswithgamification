@@ -43,7 +43,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
 
         Challenge entity = challenge.toBuilder()
-                .status(ChallengeStatus.DRAFT)
+                .status(ChallengeStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();

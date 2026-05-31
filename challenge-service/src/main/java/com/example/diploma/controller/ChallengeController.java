@@ -67,6 +67,7 @@ public class ChallengeController {
                 .targetPoints(req.targetPoints())
                 .startsAt(req.startsAt())
                 .endsAt(req.endsAt())
+                .status(ChallengeStatus.ACTIVE)
                 .build();
 
         return challengeService.createChallenge(challenge);

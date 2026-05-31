@@ -27,4 +27,9 @@ public class AuthController {
     public AuthResponse login(@RequestBody @Valid LoginRequest req) {
         return authService.login(req.email(), req.password());
     }
+
+    @PostMapping("/reapply")
+    public void reapply(@RequestParam String email) {
+        authService.reapplyForApproval(email);
+    }
 }

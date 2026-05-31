@@ -16,6 +16,8 @@ public record UserResponse(
         String phone,
         String gender,
         LocalDate birthDate,
+        String status,
+        String avatarUrl,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -30,6 +32,8 @@ public record UserResponse(
                 user.getPhone(),
                 user.getGender(),
                 user.getBirthDate(),
+                user.getStatus(),
+                user.getAvatarUrl(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

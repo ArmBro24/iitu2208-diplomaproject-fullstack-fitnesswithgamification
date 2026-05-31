@@ -34,7 +34,8 @@ public class User {
     private String phone;
     private String gender;
     private java.time.LocalDate birthDate;
-
+    private String status;
+    private String avatarUrl;
     private java.time.LocalDateTime createdAt;
     private java.time.LocalDateTime updatedAt;
 }
