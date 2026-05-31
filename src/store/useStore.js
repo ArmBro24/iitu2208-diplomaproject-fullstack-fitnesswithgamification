@@ -78,6 +78,48 @@ const useStore = create((set, get) => ({
     sessions: [],
     clients: [],
 
+    pendingTrainers: [],
+
+    fetchPendingTrainers: async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:8080/api/admin/users/pending-trainers', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            set({ pendingTrainers: response.data });
+        } catch (error) {
+            console.error("Failed to fetch pending trainers:", error);
+        }
+    },
+
+    rejectTrainer: async (trainerId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`http://localhost:8080/api/admin/users/${trainerId}/reject`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await get().fetchPendingTrainers();
+            alert("Trainer request rejected.");
+        } catch (error) {
+            console.error("Failed to reject trainer:", error);
+            alert("Failed to reject trainer.");
+        }
+    },
+
+    approveTrainer: async (trainerId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`http://localhost:8080/api/admin/users/${trainerId}/approve`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await get().fetchPendingTrainers();
+            alert("Trainer approved successfully!");
+        } catch (error) {
+            console.error("Failed to approve trainer:", error);
+            alert("Failed to approve trainer.");
+        }
+    },
+
     logout: () => {
         const aiProfileMemory = localStorage.getItem(AI_PROFILE_STORAGE_KEY);
 
@@ -107,6 +149,36 @@ const useStore = create((set, get) => ({
             localStorage.setItem('activeRole', userData.role);
         }
         set({ currentUser: userData });
+    },
+
+    uploadAvatar: async (file) => {
+        try {
+            const token = localStorage.getItem('token');
+            const userId = localStorage.getItem('userId');
+            if (!userId || !token) return false;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await axios.post(`${API_AUTH_URL}/${userId}/avatar`, formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data && response.data.avatarUrl) {
+                set({ currentUser: { ...response.data } });
+                return response.data.avatarUrl;
+            }
+
+            await get().fetchUserProfile();
+            return true;
+        } catch (error) {
+            console.error("Failed to upload avatar:", error);
+            alert("Error uploading image. Please check file type/size.");
+            return false;
+        }
     },
 
     fetchUserProfile: async () => {
@@ -144,19 +216,50 @@ const useStore = create((set, get) => ({
     fetchMyClients: async (coachId) => {
         try {
             const token = localStorage.getItem('token');
+
             const response = await axios.get(`${API_MENTORSHIP_URL}/coach/${coachId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const mappedClients = response.data.map(m => ({
-                id: m.clientId,
-                name: m.clientNickname || `User #${m.clientId}`,
-                level: "Lv. 1",
-                attendance: "100%",
-                progress: 0,
-                status: "Active",
-                goal: "Not set"
-            }));
+            const mappedClients = await Promise.all(
+                response.data.map(async (m) => {
+                    try {
+                        const userResponse = await axios.get(`${API_AUTH_URL}/${m.clientId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+
+                        const nickname = getUserNickname(userResponse.data);
+
+                        let finalName;
+                        if (nickname === 'Nickname not set') {
+                            finalName = getUserDisplayName(userResponse.data);
+                        } else {
+                            finalName = nickname.startsWith('@') ? nickname.slice(1) : nickname;
+                        }
+
+                        return {
+                            id: m.clientId,
+                            name: finalName,
+                            level: "Lv. 1",
+                            attendance: "100%",
+                            progress: 0,
+                            status: "Active",
+                            goal: "Not set"
+                        };
+                    } catch (userError) {
+                        console.error(`Failed to fetch profile for client ${m.clientId}:`, userError);
+                        return {
+                            id: m.clientId,
+                            name: `User #${m.clientId}`,
+                            level: "Lv. 1",
+                            attendance: "100%",
+                            progress: 0,
+                            status: "Active",
+                            goal: "Not set"
+                        };
+                    }
+                })
+            );
 
             set({ clients: mappedClients });
         } catch (error) {
@@ -214,7 +317,7 @@ const useStore = create((set, get) => ({
                 id: u.id,
                 name: getUserDisplayName(u),
                 surname: u.nickname ? getUserNickname(u) : "Coach",
-                img: trainerImages[u.id] || tr1,
+                img: u.avatarUrl ? u.avatarUrl : (trainerImages[u.id] || tr1),
                 points: 0,
                 phone: "+7 (777) 000 00 00",
                 reviews: ["New coach in HeroFit!"]

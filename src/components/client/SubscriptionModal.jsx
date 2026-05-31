@@ -11,7 +11,6 @@ const SubscriptionModal = ({ sub, onClose }) => {
     const handlePurchase = (e) => {
         e.preventDefault();
 
-        // Создаем новый объект состояния
         const newSubscription = {
             subId: sub.id,
             status: 'active'
@@ -21,7 +20,6 @@ const SubscriptionModal = ({ sub, onClose }) => {
 
         console.log("Store updated with:", newSubscription);
 
-        // Закрываем модалку
         onClose();
     };
 
@@ -32,12 +30,10 @@ const SubscriptionModal = ({ sub, onClose }) => {
             <div className="flex min-h-full items-center justify-center p-8 md:p-12">
                 <div className="relative w-full max-w-2xl bg-white/10 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[32px] md:rounded-[40px] flex flex-col md:flex-row overflow-hidden z-10 animate-in zoom-in duration-300">
 
-                    {/* Кнопка закрытия */}
                     <button onClick={onClose} className="absolute top-6 right-6 z-20 p-2 text-white/40 hover:text-[#c1cf98] transition-colors">
                         <FiX size={24} />
                     </button>
 
-                    {/* Левая часть: Описание пакета */}
                     <div className="w-full md:w-[45%] p-8 bg-white/5 border-b md:border-b-0 md:border-r border-white/5">
                         <span className="text-[#c1cf98] text-xs font-medium tracking-wide">{sub.desc}</span>
                         <h2 className="text-3xl font-bold mt-2 mb-6 leading-tight tracking-tight">{sub.title}</h2>
@@ -51,7 +47,6 @@ const SubscriptionModal = ({ sub, onClose }) => {
                         </ul>
                     </div>
 
-                    {/* Правая часть: Форма */}
                     <div className="flex-1 p-8">
                         <h3 className="text-xl font-bold mb-6 tracking-tight text-[#c1cf98]">Checkout</h3>
 

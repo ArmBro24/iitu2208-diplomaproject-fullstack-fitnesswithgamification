@@ -141,7 +141,6 @@ const Register = () => {
                                 >
                                     <option value="MEMBER">Client</option>
                                     <option value="COACH">Trainer</option>
-                                    <option value="ADMIN">Admin</option>
                                 </select>
                                 <FiChevronDown
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"/>

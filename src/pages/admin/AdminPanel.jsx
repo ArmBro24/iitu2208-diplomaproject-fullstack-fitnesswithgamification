@@ -18,6 +18,11 @@ import {
     FiUserCheck,
     FiUsers,
     FiX,
+    FiCalendar,
+    FiMail,
+    FiPhone,
+    FiUser,
+    FiTrash2
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
 import useStore from '../../store/useStore.js';
@@ -32,25 +37,53 @@ const AdminPanel = ({ onLogout }) => {
     const [dashboard, setDashboard] = useState({ payload: {}, services: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
+
+    const [selectedPendingTrainer, setSelectedPendingTrainer] = useState(null);
+
     const currentUser = useStore((state) => state.currentUser);
+    const { pendingTrainers, fetchPendingTrainers, approveTrainer, rejectTrainer } = useStore();
 
     const loadDashboard = useCallback(async () => {
         setIsLoading(true);
         setLoadError('');
 
         try {
-            const result = await fetchAdminDashboard();
-            setDashboard(result);
+            await Promise.all([
+                fetchAdminDashboard().then(setDashboard),
+                fetchPendingTrainers()
+            ]);
         } catch (error) {
             setLoadError(error.response?.data?.message || 'Could not load administrator data.');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [fetchPendingTrainers]);
 
     useEffect(() => {
         loadDashboard();
     }, [loadDashboard]);
+
+    const handleApproveTrainer = async (trainerId) => {
+        try {
+            await approveTrainer(trainerId);
+            setSelectedPendingTrainer(null);
+            await loadDashboard();
+        } catch (error) {
+            console.error("Failed to approve trainer:", error);
+        }
+    };
+
+    const handleRejectTrainer = async (trainerId) => {
+        if (window.confirm("Are you sure you want to reject and remove this trainer request?")) {
+            try {
+                await rejectTrainer(trainerId);
+                setSelectedPendingTrainer(null);
+                await loadDashboard();
+            } catch (error) {
+                console.error("Failed to reject trainer:", error);
+            }
+        }
+    };
 
     const users = useMemo(() => dashboard.payload.auth?.users ?? [], [dashboard.payload.auth?.users]);
     const filteredUsers = useMemo(() => {
@@ -106,6 +139,8 @@ const AdminPanel = ({ onLogout }) => {
                                     roleFilter={roleFilter}
                                     setQuery={setQuery}
                                     setRoleFilter={setRoleFilter}
+                                    pendingTrainers={pendingTrainers}
+                                    onSelectTrainer={setSelectedPendingTrainer}
                                 />
                             )}
                             {activeView === 'relationships' && (
@@ -129,9 +164,102 @@ const AdminPanel = ({ onLogout }) => {
                     </main>
                 </div>
             </div>
+
+            {selectedPendingTrainer && (
+                <TrainerReviewModal
+                    trainer={selectedPendingTrainer}
+                    onClose={() => setSelectedPendingTrainer(null)}
+                    onApprove={handleApproveTrainer}
+                    onReject={handleRejectTrainer}
+                />
+            )}
         </Background>
     );
 };
+
+const TrainerReviewModal = ({ trainer, onClose, onApprove, onReject }) => {
+    if (!trainer) return null;
+
+    return (
+        <div className="fixed inset-0 z-[200] overflow-y-auto font-rubik text-white selection:bg-[#c1cf98]/30">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity" onClick={onClose} />
+
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-6 lg:p-8">
+                <div className="relative w-full max-w-2xl bg-[#141615]/95 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-[32px] md:rounded-[40px] overflow-hidden z-10 animate-in zoom-in duration-200 flex flex-col md:flex-row">
+
+                    <button onClick={onClose} className="absolute top-6 right-6 z-20 p-2 text-white/40 hover:text-[#c1cf98] transition-colors" aria-label="Close modal">
+                        <FiX size={22} />
+                    </button>
+
+                    <div className="w-full md:w-[40%] p-6 sm:p-8 bg-white/5 border-b md:border-b-0 md:border-r border-white/5 flex flex-col items-center justify-center text-center shrink-0">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-yellow-500/30 bg-yellow-500/10 text-2xl font-black text-yellow-500 mb-4 shadow-inner">
+                            {getUserInitials(trainer)}
+                        </div>
+                        <span className="text-yellow-500 text-[10px] font-black tracking-widest uppercase bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+                            {roleLabel(trainer.role)} Request
+                        </span>
+                        <h3 className="text-xl font-black mt-3 leading-tight text-[#f5efe7] break-words max-w-full">
+                            {getUserDisplayName(trainer)}
+                        </h3>
+                        <p className="text-xs text-[#c1cf98]/70 mt-1 break-all max-w-full">
+                            {getUserNickname(trainer)}
+                        </p>
+                    </div>
+
+                    <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between min-w-0">
+                        <div>
+                            <h4 className="text-base font-black tracking-tight text-[#c1cf98] mb-4">Application Details</h4>
+
+                            <div className="space-y-3.5">
+                                <DetailField icon={FiMail} label="Email address" value={trainer.email} isCopyable />
+                                <DetailField icon={FiPhone} label="Phone number" value={trainer.phone || 'Not specified'} />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <DetailField icon={FiUser} label="Gender" value={trainer.gender || 'Not set'} />
+                                    <DetailField icon={FiCalendar} label="Birth Date" value={trainer.birthDate ? formatDate(trainer.birthDate) : 'Not set'} />
+                                </div>
+                                <DetailField
+                                    icon={FiShield}
+                                    label="Registered on"
+                                    value={trainer.createdAt ? `${formatDate(trainer.createdAt)} ${new Date(trainer.createdAt).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}` : 'Unknown'}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-8 grid gap-3 sm:grid-cols-2 pt-4 border-t border-white/5">
+                            <button
+                                type="button"
+                                onClick={() => onReject(trainer.id)}
+                                className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-4 py-3 text-sm font-black text-red-300 transition-all active:scale-[0.97] w-full"
+                            >
+                                <FiTrash2 size={15} /> Decline Request
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onApprove(trainer.id)}
+                                className="flex items-center justify-center gap-2 rounded-2xl bg-[#c1cf98] hover:bg-[#b0be87] px-4 py-3 text-sm font-black text-[#111412] transition-all active:scale-[0.97] w-full shadow-lg shadow-[#c1cf98]/10"
+                            >
+                                <FiUserCheck size={15} /> Approve Access
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DetailField = ({ icon: Icon, label, value, isCopyable }) => (
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 min-w-0">
+        <span className="block text-[10px] font-black uppercase tracking-wider text-white/35 flex items-center gap-1.5">
+            <Icon size={11} className="text-[#c1cf98]" />
+            {label}
+        </span>
+        <p className="mt-1 text-sm font-bold text-[#f5efe7] truncate max-w-full" title={value}>
+            {value}
+        </p>
+    </div>
+);
 
 const AdminHeader = ({ activeView, currentUser, unavailableServices, onMenu, onRefresh, isLoading }) => (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-[#111412]/88 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
@@ -246,9 +374,44 @@ const OverviewView = ({ data, isLoading, onNavigate }) => {
     );
 };
 
-const UsersView = ({ query, roleFilter, setQuery, setRoleFilter, users, isLoading }) => (
+const UsersView = ({ query, roleFilter, setQuery, setRoleFilter, users, isLoading, pendingTrainers, onSelectTrainer }) => (
     <div className="space-y-5">
+
+        {pendingTrainers && pendingTrainers.length > 0 && (
+            <Panel title="Account Moderation" eyebrow="Action Required">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {pendingTrainers.map((trainer) => (
+                        <div
+                            key={trainer.id}
+                            onClick={() => onSelectTrainer(trainer)}
+                            className="flex flex-col justify-between gap-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/[0.03] p-4 min-w-0 cursor-pointer hover:border-yellow-500/40 hover:bg-yellow-500/[0.05] transition-all group"
+                        >
+                            <div className="flex items-start gap-3 min-w-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10 text-xs font-black text-yellow-500 group-hover:scale-105 transition-transform">
+                                    {getUserInitials(trainer)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-black text-[#f5efe7] text-base truncate">
+                                        {getUserDisplayName(trainer)}
+                                    </p>
+                                    <p className="text-xs text-white/40 truncate">{trainer.email}</p>
+                                    <span className="mt-2 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-0.5 text-[10px] font-bold text-yellow-300 uppercase tracking-wider">
+                                        {roleLabel(trainer.role)} (Pending)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="text-xs font-bold text-[#c1cf98] flex items-center justify-end gap-1 group-hover:translate-x-0.5 transition-transform">
+                                Review application <span>{'->'}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </Panel>
+        )}
+
         <Toolbar query={query} setQuery={setQuery} roleFilter={roleFilter} setRoleFilter={setRoleFilter} />
+
         <Panel title="Registered Accounts" eyebrow="Auth Service">
             {users.length ? (
                 <DataTable
@@ -258,7 +421,7 @@ const UsersView = ({ query, roleFilter, setQuery, setRoleFilter, users, isLoadin
                         <RoleBadge key="role" role={roleLabel(user.role)} />,
                         user.phone || 'Not provided',
                         formatDate(user.createdAt),
-                        <StatusBadge key="record" status="Registered" />,
+                        <StatusBadge key="record" status={user.status || "Registered"} />,
                     ])}
                 />
             ) : <EmptyState text={isLoading ? 'Loading users...' : 'No accounts match the filter.'} />}
@@ -431,11 +594,11 @@ const DataTable = ({ columns, rows }) => (
         <table className="w-full min-w-[650px] border-separate border-spacing-y-2">
             <thead><tr>{columns.map((column) => <th key={column} className="px-4 py-2 text-left text-xs font-black uppercase tracking-[0.16em] text-white/35">{column}</th>)}</tr></thead>
             <tbody>
-                {rows.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="bg-white/[0.04]">
-                        {row.map((cell, cellIndex) => <td key={cellIndex} className="border-y border-white/10 px-4 py-4 text-sm text-white/68 first:rounded-l-2xl first:border-l last:rounded-r-2xl last:border-r">{cell}</td>)}
-                    </tr>
-                ))}
+            {rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="bg-white/[0.04]">
+                    {row.map((cell, cellIndex) => <td key={cellIndex} className="border-y border-white/10 px-4 py-4 text-sm text-white/68 first:rounded-l-2xl first:border-l last:rounded-r-2xl last:border-r">{cell}</td>)}
+                </tr>
+            ))}
             </tbody>
         </table>
     </div>
