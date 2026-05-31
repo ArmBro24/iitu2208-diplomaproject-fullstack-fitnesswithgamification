@@ -157,26 +157,34 @@ const useStore = create((set, get) => ({
             const userId = localStorage.getItem('userId');
             if (!userId || !token) return false;
 
-            const formData = new FormData();
-            formData.append('file', file);
+            let response;
 
-            const response = await axios.post(`${API_AUTH_URL}/${userId}/avatar`, formData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            if (file === null) {
+                response = await axios.delete(`${API_AUTH_URL}/${userId}/avatar`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } else {
+                const formData = new FormData();
+                formData.append('file', file);
 
-            if (response.data && response.data.avatarUrl) {
+                response = await axios.post(`${API_AUTH_URL}/${userId}/avatar`, formData, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            }
+
+            if (response.data && response.hasOwnProperty('data')) {
                 set({ currentUser: { ...response.data } });
-                return response.data.avatarUrl;
+                return response.data.avatarUrl || true;
             }
 
             await get().fetchUserProfile();
             return true;
         } catch (error) {
-            console.error("Failed to upload avatar:", error);
-            alert("Error uploading image. Please check file type/size.");
+            console.error("Failed to manage avatar:", error);
+            alert("Error managing image. Please try again.");
             return false;
         }
     },
