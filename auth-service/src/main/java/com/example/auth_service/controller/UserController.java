@@ -72,4 +72,19 @@ public class UserController {
             return ResponseEntity.status(500).body("Could not store file: " + e.getMessage());
         }
     }
+
+    @DeleteMapping("/{id}/avatar")
+    public ResponseEntity<?> deleteAvatar(@PathVariable Long id) {
+        try {
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+            user.setAvatarUrl(null);
+            User updatedUser = userRepository.save(user);
+
+            return ResponseEntity.ok(UserResponse.from(updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Could not delete avatar: " + e.getMessage());
+        }
+    }
 }
