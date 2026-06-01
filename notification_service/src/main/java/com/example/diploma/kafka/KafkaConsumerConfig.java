@@ -3,6 +3,8 @@ package com.example.diploma.kafka;
 
 import com.example.diploma.event.ChallengeCompletedEvent;
 import com.example.diploma.event.PointsAwardedEvent;
+import com.example.diploma.event.PaymentCompletedEvent;
+import com.example.diploma.event.PaymentRefundedEvent;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +13,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+
 
 import java.util.Map;
 

@@ -17,56 +17,88 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNotification(Notification notification) {
-        Notification entity = notification.toBuilder()
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
+        validateCreateNotification(notification);
 
-        return notificationRepository.save(entity);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setIsRead(false);
+
+        return notificationRepository.save(notification);
     }
 
     @Override
     public List<Notification> getUserNotifications(Long userId) {
-        return notificationRepository.findAll().stream()
-                .filter(n -> n.getUserId().equals(userId))
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .toList();
+        validateUserId(userId);
+
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     @Override
     public List<Notification> getUnreadNotifications(Long userId) {
-        return notificationRepository.findAll().stream()
-                .filter(n -> n.getUserId().equals(userId))
-                .filter(n -> Boolean.FALSE.equals(n.getIsRead()))
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .toList();
+        validateUserId(userId);
+
+        return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
     }
 
     @Override
     public Notification markAsRead(Long id) {
+        validateNotificationId(id);
+
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
 
-        Notification updated = notification.toBuilder()
-                .isRead(true)
-                .build();
+        if (Boolean.TRUE.equals(notification.getIsRead())) {
+            return notification;
+        }
 
-        return notificationRepository.save(updated);
+        notification.setIsRead(true);
+        return notificationRepository.save(notification);
     }
 
     @Override
     public void markAllAsRead(Long userId) {
-        List<Notification> notifications = notificationRepository.findAll().stream()
-                .filter(n -> n.getUserId().equals(userId))
-                .filter(n -> Boolean.FALSE.equals(n.getIsRead()))
-                .toList();
+        validateUserId(userId);
 
-        for (Notification notification : notifications) {
-            Notification updated = notification.toBuilder()
-                    .isRead(true)
-                    .build();
+        List<Notification> notifications =
+                notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
 
-            notificationRepository.save(updated);
+        if (notifications.isEmpty()) {
+            return;
+        }
+
+        notifications.forEach(n -> n.setIsRead(true));
+        notificationRepository.saveAll(notifications);
+    }
+
+
+    private void validateCreateNotification(Notification notification) {
+        if (notification == null) {
+            throw new IllegalArgumentException("Notification is required");
+        }
+
+        validateUserId(notification.getUserId());
+
+        if (notification.getTitle() == null || notification.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Notification title is required");
+        }
+
+        if (notification.getMessage() == null || notification.getMessage().isBlank()) {
+            throw new IllegalArgumentException("Notification message is required");
+        }
+
+        if (notification.getType() == null) {
+            throw new IllegalArgumentException("Notification type is required");
+        }
+    }
+
+    private void validateUserId(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("Valid userId is required");
+        }
+    }
+
+    private void validateNotificationId(Long id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("Valid notificationId is required");
         }
     }
 }

@@ -4,6 +4,8 @@ public final class KafkaTopics {
 
     public static final String POINTS_AWARDED = "points.awarded";
     public static final String CHALLENGE_COMPLETED = "challenge.completed";
+    public static final String PAYMENT_COMPLETED = "payment.completed";
+    public static final String PAYMENT_REFUNDED = "payment.refunded";
 
     private KafkaTopics() {
     }

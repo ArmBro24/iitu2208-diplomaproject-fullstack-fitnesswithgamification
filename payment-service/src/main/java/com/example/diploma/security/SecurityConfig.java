@@ -1,15 +1,16 @@
-package com.example.diploma.securty;
+package com.example.diploma.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // Проверьте этот импорт
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -20,7 +21,6 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -28,20 +28,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/notifications")
-                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN", "COACH", "ROLE_COACH")
+                        .requestMatchers(HttpMethod.POST, "/api/payments")
+                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
 
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/notifications/user/*")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER", "COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/payments/*/success")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
 
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/notifications/user/*/unread")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER", "COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/payments/*/failed")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
 
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/notifications/*/read")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER", "COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/payments/*/refund")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
 
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/notifications/user/*/read-all")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER", "COACH", "ROLE_COACH", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/payments/**")
+                        .authenticated()
 
                         .anyRequest()
                         .authenticated()
@@ -55,7 +55,7 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // Ваш фронтенд
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 

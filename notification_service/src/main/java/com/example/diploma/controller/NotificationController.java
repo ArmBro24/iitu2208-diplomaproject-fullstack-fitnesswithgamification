@@ -6,6 +6,8 @@ import com.example.diploma.model.Notification;
 import com.example.diploma.service.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +20,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PostMapping
-    public NotificationResponse create(@RequestBody @Valid CreateNotificationRequest request) {
+    public ResponseEntity<NotificationResponse> create(@RequestBody @Valid CreateNotificationRequest request) {
         Notification notification = Notification.builder()
                 .userId(request.userId())
                 .title(request.title())
@@ -26,7 +28,11 @@ public class NotificationController {
                 .type(request.type())
                 .build();
 
-        return map(notificationService.createNotification(notification));
+        Notification created = notificationService.createNotification(notification);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(map(created));
     }
 
     @GetMapping("/user/{userId}")
@@ -49,8 +55,10 @@ public class NotificationController {
     }
 
     @PatchMapping("/user/{userId}/read-all")
-    public void markAllAsRead(@PathVariable Long userId) {
+    public ResponseEntity<Void> markAllAsRead(@PathVariable Long userId) {
         notificationService.markAllAsRead(userId);
+
+        return ResponseEntity.noContent().build();
     }
 
     private NotificationResponse map(Notification notification) {

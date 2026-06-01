@@ -4,5 +4,6 @@ public enum NotificationType {
     TRAINING,
     CHALLENGE,
     GAMIFICATION,
+    PAYMENT,
     SYSTEM
 }
