@@ -22,6 +22,15 @@ const ProfileCharacter = ({ alt, image, initials, level = 1, points = 0 }) => {
 
     const hasCustomAvatar = !!(currentUser?.avatarUrl && currentUser.avatarUrl.startsWith('http'));
 
+    const getEvolutionStage = (lvl) => {
+        if (lvl >= 20) return { name: 'Cyber Titan', color: '#a855f7', glow: 'shadow-[0_0_40px_rgba(168,85,247,0.5)]', coreColor: '#c084fc' };
+        if (lvl >= 12) return { name: 'Elite Champion', color: '#22c55e', glow: 'shadow-[0_0_30px_rgba(34,197,94,0.4)]', coreColor: '#4ade80' };
+        if (lvl >= 5) return { name: 'Iron Challenger', color: '#f97316', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)]', coreColor: '#fb923c' };
+        return { name: 'Novice Athlete', color: '#94a3b8', glow: '', coreColor: '#67e8f9' }; // На 0-1 уровне неоново-бирюзовое око
+    };
+
+    const stage = getEvolutionStage(level);
+
     const handleAvatarClick = (e) => {
         e.stopPropagation();
         if (fileInputRef.current) {
@@ -209,16 +218,78 @@ const ProfileCharacter = ({ alt, image, initials, level = 1, points = 0 }) => {
                 onChange={handleFileChange}
             />
 
-            <div onClick={handleAvatarClick} className={`profile-character-stage relative flex items-center justify-center border border-[#c1cf98]/30 bg-[#c1cf98]/10 transition-all duration-300 md:group-hover:-translate-y-1 cursor-pointer w-full max-w-[240px] md:max-w-[200px] h-auto ${hasCustomAvatar ? 'aspect-[2/3] rounded-[24px]' : 'aspect-square rounded-2xl'}`}>
-                <div className={`profile-aura absolute inset-[-10px] border border-[#c1cf98]/20 transition-all duration-300 ${hasCustomAvatar ? 'rounded-[32px]' : 'rounded-3xl'}`}></div>
-                <div className={`profile-aura profile-aura-delayed absolute inset-[-4px] border border-[#c1cf98]/15 transition-all duration-300 ${hasCustomAvatar ? 'rounded-[28px]' : 'rounded-[20px]'}`}></div>
+            <div onClick={handleAvatarClick} className={`profile-character-stage relative flex items-center justify-center border border-white/10 bg-gradient-to-b from-neutral-800 to-neutral-900 transition-all duration-300 md:group-hover:-translate-y-1 cursor-pointer w-full max-w-[240px] md:max-w-[200px] h-auto aspect-square rounded-full ${stage.glow}`}>
+                <div className="profile-aura absolute inset-[-10px] border border-white/5 transition-all duration-300 rounded-full"></div>
+                <div className="profile-aura profile-aura-delayed absolute inset-[-4px] border border-white/5 transition-all duration-300 rounded-full"></div>
 
-                <div className={`profile-character-breath relative z-10 flex h-[calc(100%-16px)] w-[calc(100%-16px)] items-center justify-center overflow-hidden bg-black/30 transition-all duration-300 ${hasCustomAvatar ? 'rounded-[18px]' : 'rounded-xl'}`}>
-                    <img
-                        alt={alt || "Trainer Avatar"}
-                        className="h-full w-full object-cover transition-transform duration-300 md:group-hover:scale-[1.045]"
-                        src={finalImageSrc}
-                    />
+                <div className="profile-character-breath relative z-10 flex h-[calc(100%-16px)] w-[calc(100%-16px)] items-center justify-center overflow-hidden bg-black/30 transition-all duration-300 rounded-full">
+                    {hasCustomAvatar ? (
+                        <img
+                            alt={alt || "Trainer Avatar"}
+                            className="h-full w-full object-cover transition-transform duration-300 md:group-hover:scale-[1.045]"
+                            src={finalImageSrc}
+                        />
+                    ) : (
+                        /* ВЫСОКОТЕХНОЛОГИЧНЫЙ CLAY RPG ДРОН (БЕСПОЛЫЙ И СЛОЖНЫЙ) */
+                        <svg width="130" height="130" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_12px_24px_rgba(0,0,0,0.65)]">
+                            <defs>
+                                {/* Мягкий матовый градиент для деталей брони */}
+                                <radialGradient id="clayArmor" cx="40%" cy="30%" r="60%" fx="30%" fy="20%">
+                                    <stop offset="0%" stopColor="#f8fafc" />
+                                    <stop offset="65%" stopColor="#cbd5e1" />
+                                    <stop offset="100%" stopColor="#475569" />
+                                </radialGradient>
+                                {/* Темный внутренний каркас дрона */}
+                                <linearGradient id="cyberChassis" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#334155" />
+                                    <stop offset="100%" stopColor="#0f172a" />
+                                </linearGradient>
+                                {/* Неоновое свечение энергетического ядра */}
+                                <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stopColor="#ffffff" />
+                                    <stop offset="40%" stopColor={stage.coreColor} />
+                                    <stop offset="100%" stopColor={stage.coreColor} stopOpacity="0" />
+                                </radialGradient>
+                            </defs>
+
+                            {/* Задняя механическая дуга/подвес */}
+                            <path d="M 25 65 A 32 32 0 1 1 75 65" stroke="url(#cyberChassis)" strokeWidth="5" strokeLinecap="round" opacity="0.8" />
+                            <circle cx="25" cy="65" r="3.5" fill={stage.color} />
+                            <circle cx="75" cy="65" r="3.5" fill={stage.color} />
+
+                            {/* Левитирующие боковые модули (Появляются физически на высоком уровне) */}
+                            {level >= 12 && (
+                                <g className="animate-bounce">
+                                    {/* Левый спутник */}
+                                    <path d="M 10 45 L 5 50 L 8 58 L 15 52 Z" fill="url(#clayArmor)" />
+                                    <circle cx="10" cy="51" r="1.5" fill={stage.color} />
+                                    {/* Правый спутник */}
+                                    <path d="M 90 45 L 95 50 L 92 58 L 85 52 Z" fill="url(#clayArmor)" />
+                                    <circle cx="90" cy="51" r="1.5" fill={stage.color} />
+                                </g>
+                            )}
+
+                            {/* Основной сферический корпус Дрона */}
+                            <circle cx="50" cy="50" r="24" fill="url(#clayArmor)" />
+
+                            {/* Технологичные стыки плит на корпусе (эффект сложной структуры) */}
+                            <path d="M 32 36 A 24 24 0 0 1 68 36" stroke="#475569" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+                            <path d="M 26 50 L 32 50" stroke="#475569" strokeWidth="1.5" opacity="0.5" />
+                            <path d="M 68 50 L 74 50" stroke="#475569" strokeWidth="1.5" opacity="0.5" />
+                            <path d="M 50 74 L 50 68" stroke="#475569" strokeWidth="1.5" opacity="0.5" />
+
+                            {/* Центральный футуристичный визор / Око ИИ */}
+                            <rect x="34" y="42" width="32" height="14" rx="7" fill="url(#cyberChassis)" />
+
+                            {/* Пульсирующее светящееся ядро внутри визора */}
+                            <circle cx="50" cy="49" r="9" fill="url(#coreGlow)" className="animate-pulse" />
+                            <circle cx="50" cy="49" r="3" fill="#ffffff" />
+
+                            {/* Нижний стабилизатор полета (Глиняный хвост) */}
+                            <path d="M 44 73 L 50 84 L 56 73 Z" fill="url(#clayArmor)" />
+                            <line x1="50" y1="74" x2="50" y2="80" stroke="#475569" strokeWidth="1" opacity="0.4" />
+                        </svg>
+                    )}
 
                     <div className="hidden md:flex absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-col items-center justify-center gap-2">
                         <div className="flex items-center gap-3">
@@ -235,10 +306,23 @@ const ProfileCharacter = ({ alt, image, initials, level = 1, points = 0 }) => {
                     </div>
                 </div>
 
+                {level >= 5 && !hasCustomAvatar && (
+                    <div className="absolute inset-3 border border-dashed rounded-full animate-[spin_12s_linear_infinite]" style={{ borderColor: stage.color, opacity: 0.35 }} />
+                )}
+
+                {level >= 20 && !hasCustomAvatar && (
+                    /* Голографическая корона лидера сверху корпуса */
+                    <div className="absolute -top-5 z-20 animate-bounce">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill={stage.color} opacity="0.9" className="drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">
+                            <path d="M2 4 L7 9 L12 3 L17 9 L22 4 L19 20 L5 20 Z" />
+                        </svg>
+                    </div>
+                )}
+
                 <span className="profile-level-burst absolute -right-3 -top-3 z-20 inline-flex items-center gap-1 rounded-full border border-[#c1cf98]/35 bg-[#17191d] px-3 py-1 text-xs font-black text-[#eaf2cf] shadow-[0_0_22px_rgba(193,207,152,0.2)]">
-                <FiZap size={12} className="text-[#c1cf98]" />
-                LV {level}
-            </span>
+                    <FiZap size={12} className="text-[#c1cf98]" />
+                    LV {level}
+                </span>
                 <span className="profile-points-pop absolute -bottom-3 z-20 rounded-full border border-[#c1cf98]/30 bg-[#c1cf98] px-3 py-1 text-xs font-black text-black">+{points} XP</span>
 
                 <span className="profile-spark profile-spark-one"></span>
@@ -259,7 +343,13 @@ const ProfileCharacter = ({ alt, image, initials, level = 1, points = 0 }) => {
                 )}
             </div>
 
-            <div className="mt-4 md:mt-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-sm font-black text-[#c1cf98] transition-all duration-300 md:group-hover:bg-[#c1cf98]/10 md:group-hover:shadow-[0_0_20px_rgba(193,207,152,0.18)]">
+            <div className="text-center mt-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">Character Status</p>
+                <p className="text-sm font-black tracking-wide mt-0.5 transition-colors duration-500" style={{ color: stage.color }}>{stage.name}</p>
+                <p className="text-[11px] text-white/40 mt-0.5">{points} XP Accumulated</p>
+            </div>
+
+            <div className="mt-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 text-sm font-black text-[#c1cf98] transition-all duration-300 md:group-hover:bg-[#c1cf98]/10 md:group-hover:shadow-[0_0_20px_rgba(193,207,152,0.18)]">
                 {initials}
             </div>
 
@@ -325,76 +415,76 @@ const ProfileCharacter = ({ alt, image, initials, level = 1, points = 0 }) => {
             )}
 
             <style>{`
-            .dashed-border { border-style: dashed; }
-            @keyframes characterIdle {
-                0%, 100% { transform: translateY(0) rotate(0deg); }
-                25% { transform: translateY(-3px) rotate(-0.6deg); }
-                50% { transform: translateY(-6px) rotate(0deg); }
-                75% { transform: translateY(-3px) rotate(0.6deg); }
-            }
-            @keyframes characterBreath {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.028); }
-            }
-            @keyframes auraPulse {
-                0%, 100% { transform: scale(0.98); opacity: 0.34; }
-                50% { transform: scale(1.06); opacity: 0.78; }
-            }
-            @keyframes levelBurst {
-                0%, 100% { transform: translateY(0) scale(1); }
-                50% { transform: translateY(-2px) scale(1.04); }
-            }
-            @keyframes pointsPop {
-                0% { transform: translateY(0) scale(0.96); opacity: 0.72; }
-                38% { transform: translateY(-7px) scale(1.04); opacity: 1; }
-                100% { transform: translateY(0) scale(0.96); opacity: 0.82; }
-            }
-            @keyframes sparkDrift {
-                0%, 100% { transform: translate3d(0, 0, 0) scale(0.7); opacity: 0.18; }
-                45% { transform: translate3d(4px, -10px, 0) scale(1); opacity: 0.9; }
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
-            .profile-character-stage {
-                animation: characterIdle 4.8s ease-in-out infinite;
-                will-change: transform;
-            }
-            .profile-character-breath {
-                animation: characterBreath 3.2s ease-in-out infinite;
-                will-change: transform;
-            }
-            .profile-aura {
-                animation: auraPulse 2.8s ease-in-out infinite;
-                will-change: transform, opacity;
-            }
-            .profile-aura-delayed { animation-delay: 0.9s; }
-            .profile-level-burst { animation: levelBurst 1.8s ease-in-out infinite; }
-            .profile-points-pop {
-                animation: pointsPop 2.6s ease-in-out infinite;
-                will-change: transform, opacity;
-            }
-            .profile-spark {
-                position: absolute;
-                height: 7px;
-                width: 7px;
-                border-radius: 999px;
-                background: #c1cf98;
-                box-shadow: 0 0 16px rgba(193, 207, 152, 0.85);
-                animation: sparkDrift 3.2s ease-in-out infinite;
-                will-change: transform, opacity;
-            }
-            .profile-spark-one { left: 18px; top: 28px; animation-delay: 0.2s; }
-            .profile-spark-two { right: 22px; bottom: 34px; animation-delay: 1.1s; }
-            .profile-spark-three { right: 36px; top: 24px; animation-delay: 1.8s; }
-            @media (min-width: 768px) {
-                .profile-character:hover .profile-character-stage {
-                    animation-duration: 2.7s;
+                .dashed-border { border-style: dashed; }
+                @keyframes characterIdle {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    25% { transform: translateY(-3px) rotate(-0.6deg); }
+                    50% { transform: translateY(-6px) rotate(0deg); }
+                    75% { transform: translateY(-3px) rotate(0.6deg); }
                 }
-            }
-        `}</style>
+                @keyframes characterBreath {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.028); }
+                }
+                @keyframes auraPulse {
+                    0%, 100% { transform: scale(0.98); opacity: 0.34; }
+                    50% { transform: scale(1.06); opacity: 0.78; }
+                }
+                @keyframes levelBurst {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    50% { transform: translateY(-2px) scale(1.04); }
+                }
+                @keyframes pointsPop {
+                    0% { transform: translateY(0) scale(0.96); opacity: 0.72; }
+                    38% { transform: translateY(-7px) scale(1.04); opacity: 1; }
+                    100% { transform: translateY(0) scale(0.96); opacity: 0.82; }
+                }
+                @keyframes sparkDrift {
+                    0%, 100% { transform: translate3d(0, 0, 0) scale(0.7); opacity: 0.18; }
+                    45% { transform: translate3d(4px, -10px, 0) scale(1); opacity: 0.9; }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+                .profile-character-stage {
+                    animation: characterIdle 4.8s ease-in-out infinite;
+                    will-change: transform;
+                }
+                .profile-character-breath {
+                    animation: characterBreath 3.2s ease-in-out infinite;
+                    will-change: transform;
+                }
+                .profile-aura {
+                    animation: auraPulse 2.8s ease-in-out infinite;
+                    will-change: transform, opacity;
+                }
+                .profile-aura-delayed { animation-delay: 0.9s; }
+                .profile-level-burst { animation: levelBurst 1.8s ease-in-out infinite; }
+                .profile-points-pop {
+                    animation: pointsPop 2.6s ease-in-out infinite;
+                    will-change: transform, opacity;
+                }
+                .profile-spark {
+                    position: absolute;
+                    height: 7px;
+                    width: 7px;
+                    border-radius: 999px;
+                    background: #c1cf98;
+                    box-shadow: 0 0 16px rgba(193, 207, 152, 0.85);
+                    animation: sparkDrift 3.2s ease-in-out infinite;
+                    will-change: transform, opacity;
+                }
+                .profile-spark-one { left: 18px; top: 28px; animation-delay: 0.2s; }
+                .profile-spark-two { right: 22px; bottom: 34px; animation-delay: 1.1s; }
+                .profile-spark-three { right: 36px; top: 24px; animation-delay: 1.8s; }
+                @media (min-width: 768px) {
+                    .profile-character:hover .profile-character-stage {
+                        animation-duration: 2.7s;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

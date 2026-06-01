@@ -12,7 +12,6 @@ const ClientTraining = () => {
     const navigate = useNavigate();
     const currentUser = useStore((state) => state.currentUser);
     const selectedTraining = useStore((state) => state.selectedTraining);
-    const approveSession = useStore((state) => state.approveSession);
     const updateStatus = useStore((state) => state.updateStatus);
 
     const [isApproving, setIsApproving] = useState(false);
@@ -49,10 +48,35 @@ const ClientTraining = () => {
         motivation: data.points?.motivation || 0
     };
 
+    // Исправленный метод одобрения с явной передачей JWT-токена для предотвращения 403 ошибки
     const handleApprove = async () => {
         setIsApproving(true);
-        await approveSession(selectedTraining.id);
-        setIsApproving(false);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(`${API_BASE_URL}/sessions/${selectedTraining.id}/status?status=CONFIRMED`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            // Обновляем статус в локальном Zustand сторе, чтобы интерфейс перерисовался
+            await updateStatus(selectedTraining.id, 'CONFIRMED');
+        } catch (e) {
+            console.error("Ошибка при подтверждении тренировки:", e);
+            alert("Ошибка доступа (403 Forbidden). Проверьте права пользователя или авторизацию.");
+        } finally {
+            setIsApproving(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(`${API_BASE_URL}/sessions/${selectedTraining.id}/status?status=CANCELLED`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await updateStatus(data.id, 'CANCELLED');
+            navigate('/home');
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const handleSubmitResults = async () => {
@@ -91,90 +115,96 @@ const ClientTraining = () => {
     return (
         <Background>
             <div className="relative min-h-screen text-white font-rubik flex flex-col bg-cover bg-center bg-no-repeat fixed inset-0 overflow-hidden" style={{backgroundImage: `url(${trainingBg})`}}>
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0"/>
-            <div className="relative z-10 flex flex-col h-full overflow-y-auto no-scrollbar">
-                <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center shrink-0">
-                    <button onClick={() => navigate(-1)} className="text-2xl p-2 bg-white/5 rounded-xl">
-                        <FiArrowLeft className="text-white"/>
-                    </button>
-                    <div className="flex-grow flex items-center justify-center gap-3 pr-12">
-                        <span className={`text-lg font-medium lowercase ${getStatusColor(data.status)}`}>{data.status}</span>
-                        <h1 className="text-xl md:text-3xl font-medium text-white">Workout</h1>
-                    </div>
-                </nav>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0"/>
+                <div className="relative z-10 flex flex-col h-full overflow-y-auto no-scrollbar">
+                    <nav className="relative z-20 px-6 md:px-10 py-6 md:py-8 flex items-center shrink-0">
+                        <button onClick={() => navigate(-1)} className="text-2xl p-2 bg-white/5 rounded-xl">
+                            <FiArrowLeft className="text-white"/>
+                        </button>
+                        <div className="flex-grow flex items-center justify-center gap-3 pr-12">
+                            <span className={`text-lg font-medium lowercase ${getStatusColor(data.status)}`}>{data.status}</span>
+                            <h1 className="text-xl md:text-3xl font-medium text-white">Workout</h1>
+                        </div>
+                    </nav>
 
-                <div className="flex flex-col md:grid md:grid-cols-[1.2fr_0.8fr] w-full max-w-[1400px] mx-auto px-6 md:px-16 gap-4 md:gap-16 pb-12">
-                    {data.status?.toLowerCase() === 'requested' && (
-                        <div className="md:col-span-2 mb-2">
-                            <div className="bg-black/40 border border-white/10 rounded-[30px] p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md">
-                                <div>
-                                    <h3 className="text-[#c1cf98] text-xl font-bold">New Workout Request</h3>
-                                    <p className="text-white/60 text-sm">Confirm or decline this session.</p>
-                                </div>
-                                <div className="flex gap-4 w-full md:w-auto">
-                                    <button onClick={handleApprove} disabled={isApproving} className="flex-1 md:px-8 py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:bg-[#d4e2ae] transition-all">
-                                        {isApproving ? '...' : 'I will attend'}
+                    <div className="flex flex-col md:grid md:grid-cols-[1.2fr_0.8fr] w-full max-w-[1400px] mx-auto px-6 md:px-16 gap-4 md:gap-8 pb-12">
+
+                        {/* Заголовок тренировки */}
+                        <div className="md:col-start-2 md:row-start-1 flex flex-col justify-center">
+                            <div className="flex items-center gap-4 text-gray-300 font-medium text-lg">
+                                <span>{data.date}</span>
+                                <span className={`${getStatusColor(data.status)} font-bold`}>{data.time}</span>
+                            </div>
+                            <h2 className="text-3xl md:text-5xl font-bold mt-1">{data.title}</h2>
+                        </div>
+
+                        {/* Таблица упражнений */}
+                        <div className="md:col-start-1 md:row-start-1 md:row-span-2 bg-black/40 backdrop-blur-md rounded-[40px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-between">
+                            <table className="w-full border-collapse">
+                                <thead>
+                                <tr className="text-white/60 border-b border-white/5">
+                                    <th className="p-5 text-left font-normal">exercise</th>
+                                    <th className="p-5 text-center font-normal">planned</th>
+                                    <th className="p-5 text-center font-normal">done</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {exercises.map((ex, idx) => (
+                                    <tr key={idx} className="border-b border-white/5 last:border-none">
+                                        <td className="p-5 text-white/90 font-medium">{ex.name}</td>
+                                        <td className="p-5 text-center text-white/40">{ex.planned}</td>
+                                        <td className="p-5 text-center">
+                                            <input type="number" value={ex.done || 0} onChange={(e) => handleDoneChange(idx, e.target.value)} className="w-12 bg-white/5 border border-white/10 rounded-lg py-1 text-center" />
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                            {isPast && data.status?.toLowerCase() === 'confirmed' && (
+                                <div className="p-6 border-t border-white/5">
+                                    <button onClick={handleSubmitResults} className="w-full py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:brightness-110 transition-all">
+                                        Send Results to Coach
                                     </button>
-                                    <button onClick={() => updateStatus(data.id, 'CANCELLED')} className="flex-1 md:px-8 py-4 bg-red-500/20 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/30 transition-all">
-                                        Cancel
-                                    </button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Боковая панель поинтов (Опыт RPG) */}
+                        <div className="md:col-start-2 md:row-start-2 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 md:gap-6 pt-4 md:pt-0">
+                            <div className="shrink-0">
+                                <span className={`text-4xl md:text-6xl font-bold tracking-tighter ${data.status === 'missed' ? 'text-[#f87171]' : 'text-[#c1cf98]'}`}>
+                                    {data.status === 'missed' ? '-' : '+'}{displayPoints.total} pts
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-y-1 md:gap-y-3">
+                                <PointItem color="bg-[#9b87f5]" value={displayPoints.endurance} label="endurance"/>
+                                <PointItem color="bg-[#60a5fa]" value={displayPoints.consistency} label="consistency"/>
+                                <PointItem color="bg-[#fbbf24]" value={displayPoints.motivation} label="motivation"/>
                             </div>
                         </div>
-                    )}
 
-                    <div className="md:col-start-2 md:row-start-1 flex flex-col">
-                        <div className="flex items-center gap-4 text-gray-300 font-medium text-lg">
-                            <span>{data.date}</span>
-                            <span className={`${getStatusColor(data.status)} font-bold`}>{data.time}</span>
-                        </div>
-                        <h2 className="text-3xl md:text-5xl font-bold">{data.title}</h2>
-                    </div>
-
-                    <div className="md:col-start-1 md:row-span-2 bg-black/40 backdrop-blur-md rounded-[40px] overflow-hidden border border-white/10 shadow-2xl">
-                        <table className="w-full border-collapse">
-                            <thead>
-                            <tr className="text-white/60 border-b border-white/5">
-                                <th className="p-5 text-left font-normal">exercise</th>
-                                <th className="p-5 text-center font-normal">planned</th>
-                                <th className="p-5 text-center font-normal">done</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {exercises.map((ex, idx) => (
-                                <tr key={idx} className="border-b border-white/5 last:border-none">
-                                    <td className="p-5 text-white/90 font-medium">{ex.name}</td>
-                                    <td className="p-5 text-center text-white/40">{ex.planned}</td>
-                                    <td className="p-5 text-center">
-                                        <input type="number" value={ex.done || 0} onChange={(e) => handleDoneChange(idx, e.target.value)} className="w-12 bg-white/5 border border-white/10 rounded-lg py-1 text-center" />
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                        {isPast && data.status === 'confirmed' && (
-                            <div className="p-6 border-t border-white/5">
-                                <button onClick={handleSubmitResults} className="w-full py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:brightness-110 transition-all">
-                                    Send Results to Coach
-                                </button>
+                        {/* КАРТОЧКА ЗАПРОСА: теперь находится строго внизу под таблицей (строка 3 грида) */}
+                        {data.status?.toLowerCase() === 'requested' && (
+                            <div className="md:col-start-1 md:row-start-3 mt-4">
+                                <div className="bg-black/40 border border-white/10 rounded-[30px] p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-xl">
+                                    <div>
+                                        <h3 className="text-[#c1cf98] text-xl font-bold">New Workout Request</h3>
+                                        <p className="text-white/60 text-sm">Confirm or decline this session.</p>
+                                    </div>
+                                    <div className="flex gap-4 w-full md:w-auto">
+                                        <button onClick={handleApprove} disabled={isApproving} className="flex-1 md:px-8 py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:bg-[#d4e2ae] transition-all disabled:opacity-50">
+                                            {isApproving ? '...' : 'I will attend'}
+                                        </button>
+                                        <button onClick={handleCancel} className="flex-1 md:px-8 py-4 bg-red-500/20 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/30 transition-all">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="md:col-start-2 flex flex-row md:flex-col items-center md:items-start justify-between gap-4">
-                        <div className="shrink-0">
-                            <span className={`text-4xl md:text-6xl font-bold tracking-tighter ${data.status === 'missed' ? 'text-[#f87171]' : 'text-[#c1cf98]'}`}>
-                                {data.status === 'missed' ? '-' : '+'}{displayPoints.total} pts
-                            </span>
-                        </div>
-                        <div className="flex flex-col gap-y-1 md:gap-y-3">
-                            <PointItem color="bg-[#9b87f5]" value={displayPoints.endurance} label="endurance"/>
-                            <PointItem color="bg-[#60a5fa]" value={displayPoints.consistency} label="consistency"/>
-                            <PointItem color="bg-[#fbbf24]" value={displayPoints.motivation} label="motivation"/>
-                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </Background>
     );

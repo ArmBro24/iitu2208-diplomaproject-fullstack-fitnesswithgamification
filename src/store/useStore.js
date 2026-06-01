@@ -68,7 +68,7 @@ const useStore = create((set, get) => ({
         email: null
     },
     trainers: [],
-    userStats: { points: 288, level: 12, endurance: 89, consistency: 96, motivation: 103 },
+    userStats: { points: 0, level: 1, endurance: 0, consistency: 0, motivation: 0 },
     coachContract: { trainerId: null, status: 'none' },
     subscription: { subId: null, status: 'none' },
     challenges: [],
@@ -189,6 +189,33 @@ const useStore = create((set, get) => ({
         }
     },
 
+    fetchUserStats: async (userId) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!userId || !token) return;
+
+            const response = await axios.get(`http://localhost:8082/api/gamification/characters/${userId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data) {
+                const total = response.data.totalPoints ?? 0;
+
+                set({
+                    userStats: {
+                        points: total,
+                        level: response.data.level ?? 1,
+                        endurance: Math.round(total * 0.4),
+                        consistency: Math.round(total * 0.3),
+                        motivation: Math.round(total * 0.3)
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Failed to fetch real gamification stats:", error);
+        }
+    },
+
     fetchUserProfile: async () => {
         try {
             const userId = localStorage.getItem('userId');
@@ -199,6 +226,8 @@ const useStore = create((set, get) => ({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             set({ currentUser: { ...authResponse.data } });
+
+            await get().fetchUserStats(userId);
 
             try {
                 const mentResponse = await axios.get(`${API_MENTORSHIP_URL}/client/${userId}`, {
@@ -473,6 +502,7 @@ const useStore = create((set, get) => ({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             await get().fetchChallenges(memberId);
+            await get().fetchUserStats(memberId);
             return { success: true, message: 'Challenge accepted. Your progress is now being tracked.' };
         } catch (error) {
             console.error("Failed to accept challenge:", error);
@@ -491,13 +521,34 @@ const useStore = create((set, get) => ({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             await get().fetchChallenges(memberId);
+            await get().fetchUserStats(memberId);
             return { success: true, message: 'Challenge left. You can restart it while it is active.' };
         } catch (error) {
             console.error("Failed to leave challenge:", error);
             return { success: false, message: getChallengeError(error, 'Could not leave this challenge.') };
         }
     },
-    retryChallenge: async (id) => get().acceptChallenge(id),
+    retryChallenge: async (id) => {
+        const token = localStorage.getItem('token');
+        const memberId = localStorage.getItem('userId');
+        if (!memberId || !token) {
+            return { success: false, message: 'Please sign in before joining a challenge.' };
+        }
+
+        try {
+            await axios.post(`${API_CHALLENGES_URL}/join`, {
+                challengeId: id
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            await get().fetchChallenges(memberId);
+            await get().fetchUserStats(memberId);
+            return { success: true, message: 'Challenge accepted. Your progress is now being tracked.' };
+        } catch (error) {
+            console.error("Failed to accept challenge:", error);
+            return { success: false, message: getChallengeError(error, 'Could not accept this challenge.') };
+        }
+    },
     setCoachContract: (contract) => set({ coachContract: contract }),
     setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
     setSelectedTraining: (training) => set({ selectedTraining: training })
