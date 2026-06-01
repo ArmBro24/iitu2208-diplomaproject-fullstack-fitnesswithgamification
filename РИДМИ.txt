@@ -82,13 +82,48 @@
    → если targetPoints достигнут, status = COMPLETED
 
 14. Check notifications
-   GET /api/notifications/user/{memberId}
-   Token: MEMBER
-   Expected:
-   → Points awarded notification
-   → Challenge completed notification, если targetPoints достигнут
+    GET /api/notifications/user/{memberId}
+    Token: MEMBER
+
+Expected:
+→ status 200 OK
+→ список уведомлений пользователя
+→ Points awarded notification есть
+→ Challenge completed notification есть, только если:
+   - challenge реально достиг targetPoints
+   - challenge.completed listener нормально сработал
+
+
+14.1 Check unread notifications
+     GET /api/notifications/user/{memberId}/unread
+     Token: MEMBER
+
+Expected:
+→ status 200 OK
+→ возвращаются только unread notifications
+→ isRead = false
+
+14.2 Mark notification as read
+     PATCH /api/notifications/{notificationId}/read
+     Token: MEMBER
+
+Expected:
+→ status 200 OK
+→ isRead = true
+
+
+14.3 Mark all notifications as read
+     PATCH /api/notifications/user/{memberId}/read-all
+     Token: MEMBER
+
+Expected:
+→ status 204 No Content
+
 
 NEGATIVE A
+
+→ GET /api/notifications/user/{memberId}
+→ новых Points awarded notification после reject НЕ появилось
 
 A1. Create another training session
     Token: COACH
@@ -154,4 +189,4 @@ Body:
 
 
 
-ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 24.05.2026!!!
+ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 29.05.2026!!!
