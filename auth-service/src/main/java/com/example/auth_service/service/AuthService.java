@@ -6,4 +6,5 @@ import com.example.auth_service.controller.dto.RegisterRequest;
 public interface AuthService {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(String email, String password);
+    void reapplyForApproval(String email);
 }

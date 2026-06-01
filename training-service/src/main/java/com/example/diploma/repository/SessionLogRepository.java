@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
+    long countByStatus(SessionLogStatus status);
 
     boolean existsBySessionIdAndMemberIdAndStatusIn(
             Long sessionId,

@@ -19,7 +19,6 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -27,11 +26,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/training/admin/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions")
                         .hasAnyAuthority("COACH", "ROLE_COACH")
 
+                        // ИСПРАВЛЕНО: Теперь и COACH, и MEMBER могут менять статус сессии (например, для подтверждения клиентом)
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/sessions/*/status")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
+                        .hasAnyAuthority("COACH", "ROLE_COACH", "MEMBER", "ROLE_MEMBER")
 
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/approve")
                         .hasAnyAuthority("COACH", "ROLE_COACH")

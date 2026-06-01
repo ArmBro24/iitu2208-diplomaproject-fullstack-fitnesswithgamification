@@ -26,6 +26,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     private final TrainingSessionRepository trainingSessionRepository;
     private final SessionLogRepository sessionLogRepository;
     private final TrainingEventProducer trainingEventProducer;
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
     @Override
     public List<TrainingSession> getSessionsByMemberId(Long memberId) {
@@ -166,14 +167,26 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
         trainingSessionRepository.save(completedSession);
 
-        trainingEventProducer.sendLogApproved(
-                new TrainingLogApprovedEvent(
-                        saved.getSessionId(),
-                        saved.getMemberId(),
-                        saved.getPointsAwarded(),
-                        saved.getReviewedAt()
-                )
-        );
+        try {
+            String gamificationUrl = "http://localhost:8082/api/gamification/characters/" + saved.getMemberId() + "/points";
+
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("delta", saved.getPointsAwarded());
+            requestBody.put("comment", "Points for completed workout session #" + saved.getSessionId() + ": " + session.getTitle());
+
+            org.springframework.http.HttpEntity<java.util.Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(requestBody);
+
+            restTemplate.exchange(
+                    gamificationUrl,
+                    org.springframework.http.HttpMethod.PATCH,
+                    entity,
+                    Object.class
+            );
+
+            log.info("Successfully synchronous updated points in gamification-service via PATCH");
+        } catch (Exception e) {
+            log.error("Failed to call gamification-service directly: {}", e.getMessage());
+        }
 
         log.info("Log {} approved with {} points", logId, points);
         return saved;
