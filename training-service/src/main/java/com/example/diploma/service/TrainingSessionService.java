@@ -20,4 +20,8 @@ public interface TrainingSessionService {
     List<TrainingSession> getSessionsByMemberId(Long memberId);
 
     TrainingSession updateSessionStatus(Long sessionId, TrainingSessionStatus status);
+
+    void updateMissedSessions();
+
+    TrainingSession findById(Long sessionId);
 }

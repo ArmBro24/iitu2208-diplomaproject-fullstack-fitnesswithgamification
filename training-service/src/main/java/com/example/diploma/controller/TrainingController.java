@@ -4,13 +4,17 @@ import com.example.diploma.controller.dto.*;
 import com.example.diploma.model.Exercise;
 import com.example.diploma.model.SessionLog;
 import com.example.diploma.model.TrainingSession;
+import com.example.diploma.model.TrainingCategory;
 import com.example.diploma.model.enums.TrainingSessionStatus;
+import com.example.diploma.repository.TrainingCategoryRepository;
 import com.example.diploma.service.TrainingSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +24,7 @@ import java.util.stream.Collectors;
 public class TrainingController {
 
     private final TrainingSessionService trainingSessionService;
+    private final TrainingCategoryRepository trainingCategoryRepository;
 
     @GetMapping("/sessions/member/{memberId}")
     public List<TrainingSessionDto> getMemberSessions(@PathVariable Long memberId) {
@@ -31,14 +36,41 @@ public class TrainingController {
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingSessionDto createSession(@RequestBody @Valid CreateSessionRequest req) {
+        if (req.startsAt().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign training in the past");
+        }
+        var dbCategory = trainingCategoryRepository.findByName(req.type());
+
+        int calculatedPoints;
+        if (req.points() != null) {
+            calculatedPoints = req.points();
+        } else {
+            calculatedPoints = dbCategory
+                    .map(TrainingCategory::getDefaultPoints)
+                    .orElseGet(() -> {
+                        try {
+                            return com.example.diploma.model.enums.TrainingType.valueOf(req.type().toUpperCase()).getDefaultPoints();
+                        } catch (IllegalArgumentException | NullPointerException e) {
+                            return 50;
+                        }
+                    });
+        }
+
+        com.example.diploma.model.enums.TrainingType enumType;
+        try {
+            enumType = com.example.diploma.model.enums.TrainingType.valueOf(req.type().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            enumType = com.example.diploma.model.enums.TrainingType.OTHER;
+        }
+
         TrainingSession session = TrainingSession.builder()
                 .coachId(req.coachId())
                 .memberId(req.memberId())
                 .title(req.title())
                 .startsAt(req.startsAt())
                 .endsAt(req.endsAt())
-                .type(req.type())
-                .points(req.points())
+                .type(enumType)
+                .points(calculatedPoints)
                 .build();
 
         if (req.exercises() != null) {
@@ -60,6 +92,10 @@ public class TrainingController {
     @PostMapping("/logs")
     @ResponseStatus(HttpStatus.CREATED)
     public SessionLog submitLog(@RequestBody @Valid SubmitLogRequest req) {
+        TrainingSession session = trainingSessionService.findById(req.sessionId());
+        if (LocalDateTime.now().isBefore(session.getEndsAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Training is not finished yet");
+        }
         SessionLog log = SessionLog.builder()
                 .sessionId(req.sessionId())
                 .memberId(req.memberId())
@@ -95,8 +131,20 @@ public class TrainingController {
     @PatchMapping("/sessions/{sessionId}/status")
     public TrainingSessionDto updateStatus(@PathVariable Long sessionId,
                                            @RequestParam TrainingSessionStatus status) {
+
+        TrainingSession session = trainingSessionService.findById(sessionId);
+
+        if (status == TrainingSessionStatus.CANCELED && session.getEndsAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel past training");
+        }
+
         TrainingSession updated = trainingSessionService.updateSessionStatus(sessionId, status);
         return mapToDto(updated);
+    }
+
+    @GetMapping("/categories")
+    public List<TrainingCategory> getAllCategories() {
+        return trainingCategoryRepository.findAll();
     }
 
     private TrainingSessionDto mapToDto(TrainingSession s) {
@@ -125,5 +173,11 @@ public class TrainingController {
                 pointsDto,
                 exerciseDtos
         );
+    }
+
+    @PostMapping("/debug/run-missed-check")
+    public String runMissedCheck() {
+        trainingSessionService.updateMissedSessions();
+        return "Check triggered";
     }
 }

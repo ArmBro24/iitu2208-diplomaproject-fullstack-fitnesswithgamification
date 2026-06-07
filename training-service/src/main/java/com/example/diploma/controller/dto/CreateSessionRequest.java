@@ -1,6 +1,5 @@
 package com.example.diploma.controller.dto;
 
-import com.example.diploma.model.enums.TrainingType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,7 +16,7 @@ public record CreateSessionRequest(
         @NotNull
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime endsAt,
-        @NotNull TrainingType type,
+        @NotBlank String type,
         Integer points,
         List<ExerciseDto> exercises
 ) {}

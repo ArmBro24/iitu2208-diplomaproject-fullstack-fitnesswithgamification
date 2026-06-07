@@ -58,7 +58,7 @@ public class GamificationServiceImpl implements GamificationService {
         int safeDelta = (delta == null ? 0 : delta);
 
         int newTotal = existing.getTotalPoints() + safeDelta;
-        if (newTotal < 0) newTotal = 0; // чтобы не уходить в минус
+        if (newTotal < 0) newTotal = 0;
 
         int xpAdd = Math.max(safeDelta, 0);
         int newXp = existing.getXp() + xpAdd;
@@ -83,7 +83,7 @@ public class GamificationServiceImpl implements GamificationService {
 
         PointsLedger entry = PointsLedger.builder()
                 .memberId(memberId)
-                .sessionId(null) // тут руками, без тренировки
+                .sessionId(null)
                 .pointsAwarded(safeDelta)
                 .reason(reason)
                 .comment(comment)
@@ -218,12 +218,23 @@ public class GamificationServiceImpl implements GamificationService {
         }
 
         return characterRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Character not found for member: " + memberId));
+                .orElseGet(() -> {
+                    log.info("Character not found for memberId={}. Creating default RPG profile.", memberId);
+                    LocalDateTime now = LocalDateTime.now();
+                    Character newCharacter = Character.builder()
+                            .memberId(memberId)
+                            .level(1)
+                            .xp(0)
+                            .totalPoints(0)
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build();
+                    return characterRepository.save(newCharacter);
+                });
     }
 
     private int calculateLevel(Integer xp) {
         int safeXp = xp != null ? xp : 0;
         return (safeXp / 100) + 1;
     }
-
 }
