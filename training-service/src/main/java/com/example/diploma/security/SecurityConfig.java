@@ -26,30 +26,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/training/admin/**")
-                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
-
-                        // ИСПРАВЛЕНО: Теперь и COACH, и MEMBER могут менять статус сессии (например, для подтверждения клиентом)
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/sessions/*/status")
-                        .hasAnyAuthority("COACH", "ROLE_COACH", "MEMBER", "ROLE_MEMBER")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/approve")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/reject")
-                        .hasAnyAuthority("COACH", "ROLE_COACH")
-
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/logs")
-                        .hasAnyAuthority("MEMBER", "ROLE_MEMBER")
-
-                        .requestMatchers("/api/training/mentorship/**")
-                        .authenticated()
-
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers("/api/training/admin/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/sessions").hasRole("COACH")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/sessions/*/status").hasAnyRole("COACH", "MEMBER")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/approve").hasRole("COACH")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/training/logs/*/reject").hasRole("COACH")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/training/logs").hasRole("MEMBER")
+                        .requestMatchers("/api/training/mentorship/**").authenticated()
+                        .requestMatchers("/api/training/reviews/**").hasAnyRole("MEMBER", "COACH", "ADMIN")
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

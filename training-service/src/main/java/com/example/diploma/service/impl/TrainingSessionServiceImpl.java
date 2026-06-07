@@ -4,13 +4,16 @@ import com.example.diploma.event.TrainingLogApprovedEvent;
 import com.example.diploma.kafka.TrainingEventProducer;
 import com.example.diploma.model.SessionLog;
 import com.example.diploma.model.TrainingSession;
+import com.example.diploma.model.TrainingCategory;
 import com.example.diploma.model.enums.SessionLogStatus;
 import com.example.diploma.model.enums.TrainingSessionStatus;
 import com.example.diploma.repository.SessionLogRepository;
 import com.example.diploma.repository.TrainingSessionRepository;
+import com.example.diploma.repository.TrainingCategoryRepository;
 import com.example.diploma.service.TrainingSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.example.diploma.model.Exercise;
 
@@ -26,7 +29,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     private final TrainingSessionRepository trainingSessionRepository;
     private final SessionLogRepository sessionLogRepository;
     private final TrainingEventProducer trainingEventProducer;
-    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+    private final TrainingCategoryRepository trainingCategoryRepository;
 
     @Override
     public List<TrainingSession> getSessionsByMemberId(Long memberId) {
@@ -64,7 +67,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                 .points(finalPoints)
                 .build();
 
-        if (session.getExercises() != null) {
+        if (session.getExercises() != null && !session.getExercises().isEmpty()) {
             session.getExercises().forEach(ex -> {
                 if (ex.getName() == null || ex.getName().isBlank()) {
                     throw new IllegalArgumentException("Exercise name is required");
@@ -79,6 +82,21 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             });
 
             entity.setExercises(session.getExercises());
+        } else {
+            java.util.Optional<TrainingCategory> categoryOpt =
+                    trainingCategoryRepository.findByName(session.getType() != null ? session.getType().name() : "");
+
+            if (categoryOpt.isPresent() && categoryOpt.get().getDefaultExercises() != null) {
+                List<Exercise> defaultExercises = categoryOpt.get().getDefaultExercises().stream()
+                        .map(de -> Exercise.builder()
+                                .name(de.getName())
+                                .planned(de.getPlanned())
+                                .done(0)
+                                .session(entity)
+                                .build())
+                        .toList();
+                entity.setExercises(defaultExercises);
+            }
         }
 
         return trainingSessionRepository.save(entity);
@@ -121,6 +139,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         }
 
         applySubmittedExerciseResults(session, submittedExercises);
+
+        session.setStatus(TrainingSessionStatus.SUBMITTED);
         trainingSessionRepository.save(session);
 
         log.setStatus(SessionLogStatus.SUBMITTED);
@@ -130,9 +150,9 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     }
 
     @Override
-    public SessionLog approveLog(Long logId, Integer points, String coachComment) {
-        SessionLog existing = sessionLogRepository.findById(logId)
-                .orElseThrow(() -> new IllegalArgumentException("SessionLog not found"));
+    public SessionLog approveLog(Long sessionId, Integer points, String coachComment) {
+        SessionLog existing = sessionLogRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("SessionLog not found for sessionId: " + sessionId));
 
         if (existing.getStatus() != SessionLogStatus.SUBMITTED &&
                 existing.getStatus() != SessionLogStatus.REVISED) {
@@ -142,10 +162,8 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         TrainingSession session = trainingSessionRepository.findById(existing.getSessionId())
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        if (session.getStatus() != TrainingSessionStatus.CONFIRMED) {
-            throw new IllegalStateException(
-                    "Log can only be approved for CONFIRMED session. Current status: " + session.getStatus()
-            );
+        if (session.getStatus() == TrainingSessionStatus.CANCELED) {
+            throw new IllegalStateException("Cannot approve log for CANCELED session.");
         }
 
         if (points == null || points <= 0) {
@@ -168,27 +186,19 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
         trainingSessionRepository.save(completedSession);
 
         try {
-            String gamificationUrl = "http://localhost:8082/api/gamification/characters/" + saved.getMemberId() + "/points";
-
-            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
-            requestBody.put("delta", saved.getPointsAwarded());
-            requestBody.put("comment", "Points for completed workout session #" + saved.getSessionId() + ": " + session.getTitle());
-
-            org.springframework.http.HttpEntity<java.util.Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(requestBody);
-
-            restTemplate.exchange(
-                    gamificationUrl,
-                    org.springframework.http.HttpMethod.PATCH,
-                    entity,
-                    Object.class
+            TrainingLogApprovedEvent event = new TrainingLogApprovedEvent(
+                    saved.getSessionId(),
+                    saved.getMemberId(),
+                    saved.getPointsAwarded(),
+                    java.time.LocalDateTime.now()
             );
-
-            log.info("Successfully synchronous updated points in gamification-service via PATCH");
+            trainingEventProducer.sendLogApproved(event);
+            log.info("Successfully sent TrainingLogApprovedEvent to Kafka for sessionId: {}", saved.getSessionId());
         } catch (Exception e) {
-            log.error("Failed to call gamification-service directly: {}", e.getMessage());
+            log.error("Failed to send event to Kafka: {}", e.getMessage());
         }
 
-        log.info("Log {} approved with {} points", logId, points);
+        log.info("Log for session {} approved with {} points", sessionId, points);
         return saved;
     }
 
@@ -248,9 +258,13 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
                     || newStatus == TrainingSessionStatus.CANCELED;
 
             case CONFIRMED -> newStatus == TrainingSessionStatus.COMPLETED
-                    || newStatus == TrainingSessionStatus.CANCELED;
+                    || newStatus == TrainingSessionStatus.CANCELED
+                    || newStatus == TrainingSessionStatus.SUBMITTED
+                    || newStatus == TrainingSessionStatus.MISSED;
 
-            case COMPLETED, CANCELED -> false;
+            case SUBMITTED -> newStatus == TrainingSessionStatus.COMPLETED;
+
+            case COMPLETED, CANCELED, MISSED -> false;
         };
     }
 
@@ -290,5 +304,26 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
 
             plannedExercise.setDone(submittedExercise.getDone());
         }
+    }
+
+    @Override
+    @Scheduled(cron = "0 0 * * * *")
+    public void updateMissedSessions() {
+        List<TrainingSession> sessions = trainingSessionRepository.findByStatusInAndEndsAtBefore(
+                List.of(TrainingSessionStatus.CONFIRMED, TrainingSessionStatus.REQUESTED),
+                LocalDateTime.now()
+        );
+
+        if (!sessions.isEmpty()) {
+            sessions.forEach(s -> s.setStatus(TrainingSessionStatus.MISSED));
+            trainingSessionRepository.saveAll(sessions);
+            log.info("Автоматически обновлен статус {} сессий на MISSED", sessions.size());
+        }
+    }
+
+    @Override
+    public TrainingSession findById(Long sessionId) {
+        return trainingSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Training session not found with id: " + sessionId));
     }
 }

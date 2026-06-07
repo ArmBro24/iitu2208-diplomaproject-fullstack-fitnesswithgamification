@@ -17,4 +17,5 @@ public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
     );
 
     Optional<SessionLog> findTopBySessionIdOrderBySubmittedAtDesc(Long sessionId);
+    Optional<SessionLog> findBySessionId(Long sessionId);
 }
