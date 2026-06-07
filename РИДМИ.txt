@@ -11,90 +11,168 @@
    → сохранить coachToken
 
 5. Create character
-   POST /api/gamification/characters
-   Token: MEMBER
-   → memberId
-   → level = 1
-   → xp = 0
-   → totalPoints = 0
+...
+→ level = 1
+→ xp = 0
+→ totalPoints = 0
 
-6. Create challenge
+5.1 AI Chat Test
+POST /api/ai/chat
+Token: MEMBER
+
+Body:
+{
+  "message": "Hello, introduce yourself",
+  "messages": []
+}
+
+Expected:
+→ status 200 OK
+→ reply != null
+→ ответ от OpenAI получен
+
+5.2 AI Recommendation Test
+POST /api/ai/recommend
+Token: MEMBER
+
+Body:
+{
+  "level": "Beginner",
+  "goal": "Muscle Gain",
+  "lastSessions": [
+    "Chest and Triceps",
+    "Back and Biceps"
+  ]
+}
+
+Expected:
+→ status 200 OK
+→ plan != null
+→ Kafka event ai.recommendation.created опубликован
+
+6. Create payment
+   POST /api/payments
+   Token: MEMBER
+   Body:
+   {
+     "subscriptionId": 1,
+     "memberId": {{memberId}},
+     "amount": 15000,
+     "currency": "KZT",
+     "method": "CARD"
+   }
+   → status = PENDING
+   → сохранить paymentId
+   → payment session создаётся в Redis
+
+6.1 Confirm payment as ADMIN
+    PATCH /api/payments/{paymentId}/success
+    Token: ADMIN
+    → status = SUCCESS
+    → paidAt заполнен
+    → Kafka event payment.completed уходит
+    → notification_service создаёт Payment completed notification
+
+6.2 Check payment by id
+    GET /api/payments/{paymentId}
+    Token: MEMBER
+    Expected:
+    → status 200 OK
+    → status = SUCCESS
+    → memberId совпадает
+    → subscriptionId совпадает
+    → paidAt != null
+
+6.3 Check member payments
+    GET /api/payments/member/{memberId}
+    Token: MEMBER
+    Expected:
+    → список платежей пользователя
+    → созданный payment есть
+
+6.4 Check payment notifications
+    GET /api/notifications/user/{memberId}
+    Token: MEMBER
+    Expected:
+    → Payment completed notification есть
+
+7. Create challenge
    POST /api/challenges
    Token: COACH
    → status = DRAFT
    → сохранить challengeId
 
-6.1 Activate challenge
+7.1 Activate challenge
    PATCH /api/challenges/{challengeId}/status?status=ACTIVE
    Token: COACH
    → status = ACTIVE
 
-7. Join challenge
+8. Join challenge
    POST /api/challenges/join
    Token: MEMBER
    → работает только если challenge ACTIVE
    → currentPoints = 0
    → status = JOINED
 
-8. Create training session as COACH
+9. Create training session as COACH
    POST /api/training/sessions
    Token: COACH
    → status = REQUESTED
    → сохранить sessionId
    → сохранить exerciseIds из response
 
-9. Confirm training session as COACH
-   PATCH /api/training/sessions/{sessionId}/status?status=CONFIRMED
-   Token: COACH
-   → status = CONFIRMED
+10. Confirm training session as COACH
+    PATCH /api/training/sessions/{sessionId}/status?status=CONFIRMED
+    Token: COACH
+    → status = CONFIRMED
 
-10. Submit log as MEMBER
-   POST /api/training/logs
-   Token: MEMBER
-   → sessionId, memberId, coachId обязательны
-   → exercises: id + done
-   → сохранить logId
-   → log status = SUBMITTED
+11. Submit log as MEMBER
+    POST /api/training/logs
+    Token: MEMBER
+    → sessionId, memberId, coachId обязательны
+    → exercises: id + done
+    → сохранить logId
+    → log status = SUBMITTED
 
-11. Approve log as COACH
-   PATCH /api/training/logs/{logId}/approve
-   Token: COACH
-   → points > 0
-   → log = APPROVED
-   → session автоматически = COMPLETED
-   → Kafka event training.log.approved уходит
+12. Approve log as COACH
+    PATCH /api/training/logs/{logId}/approve
+    Token: COACH
+    → points > 0
+    → log = APPROVED
+    → session автоматически = COMPLETED
+    → Kafka event training.log.approved уходит
 
-12. Check gamification character
-   GET /api/gamification/characters/{memberId}
-   Token: MEMBER
-   Expected:
-   → xp увеличился
-   → totalPoints увеличился
-   → level пересчитался
-   → duplicate sessionId не должен начисляться второй раз
+13. Check gamification character
+    GET /api/gamification/characters/{memberId}
+    Token: MEMBER
+    Expected:
+    → xp увеличился
+    → totalPoints увеличился
+    → level пересчитался
+    → duplicate sessionId не должен начисляться второй раз
 
-13. Check challenge progress
-   GET /api/challenges/member/{memberId}
-   Token: MEMBER
-   Expected:
-   → currentPoints увеличился
-   → progress не превышает targetPoints
-   → если targetPoints достигнут, status = COMPLETED
+14. Check challenge progress
+    GET /api/challenges/member/{memberId}
+    Token: MEMBER
+    Expected:
+    → currentPoints увеличился
+    → progress не превышает targetPoints
+    → если targetPoints достигнут, status = COMPLETED
 
-14. Check notifications
+15. Check notifications
     GET /api/notifications/user/{memberId}
     Token: MEMBER
 
 Expected:
 → status 200 OK
 → список уведомлений пользователя
+→ Payment completed notification есть
 → Points awarded notification есть
 → Challenge completed notification есть, только если:
    - challenge реально достиг targetPoints
    - challenge.completed listener нормально сработал
 
-
-14.1 Check unread notifications
+15.1 Check unread notifications
      GET /api/notifications/user/{memberId}/unread
      Token: MEMBER
 
@@ -103,7 +181,7 @@ Expected:
 → возвращаются только unread notifications
 → isRead = false
 
-14.2 Mark notification as read
+15.2 Mark notification as read
      PATCH /api/notifications/{notificationId}/read
      Token: MEMBER
 
@@ -111,13 +189,68 @@ Expected:
 → status 200 OK
 → isRead = true
 
-
-14.3 Mark all notifications as read
+15.3 Mark all notifications as read
      PATCH /api/notifications/user/{memberId}/read-all
      Token: MEMBER
 
 Expected:
 → status 204 No Content
+
+
+NEGATIVE PAYMENT A
+
+A1. Create failed payment
+    POST /api/payments
+    Token: MEMBER
+    → сохранить failedPaymentId
+    → status = PENDING
+
+A2. Mark payment as failed
+    PATCH /api/payments/{failedPaymentId}/failed?reason=Insufficient funds
+    Token: ADMIN
+
+Expected:
+→ status = FAILED
+→ failureReason = "Insufficient funds"
+→ paidAt = null
+→ Kafka payment.completed НЕ уходит
+→ Payment completed notification НЕ создаётся
+
+
+NEGATIVE PAYMENT B
+
+B1. Create successful payment
+    POST /api/payments
+    Token: MEMBER
+    → сохранить refundPaymentId
+
+B2. Confirm payment
+    PATCH /api/payments/{refundPaymentId}/success
+    Token: ADMIN
+    → status = SUCCESS
+    → payment.completed уходит
+
+B3. Refund payment
+    PATCH /api/payments/{refundPaymentId}/refund
+    Token: ADMIN
+
+Expected:
+→ status = REFUNDED
+→ refundedAt != null
+→ Kafka event payment.refunded уходит
+→ Payment refunded notification создаётся
+
+
+NEGATIVE PAYMENT C
+
+C1. Попробовать refund для PENDING payment
+    PATCH /api/payments/{pendingPaymentId}/refund
+    Token: ADMIN
+
+Expected:
+→ status 409 CONFLICT
+→ error: Only successful payment can be refunded
+→ status остаётся PENDING
 
 
 NEGATIVE A
@@ -150,6 +283,7 @@ Expected:
 → Challenge НЕ меняется
 → Notification по points НЕ создаётся
 
+
 NEGATIVE B
 
 B1. Попробовать повторно обработать тот же approved session/log event
@@ -170,6 +304,7 @@ same sessionId в PointsLedger уже есть
 
 Training points for session 1 already processed. Skipping duplicate event.
 
+
 NEGATIVE C
 
 PATCH /api/gamification/characters/{memberId}/points
@@ -180,13 +315,11 @@ Body:
   "comment": "Penalty test"
 }
 
+Expected:
 → totalPoints уменьшается
 → xp не уменьшается
 → ledger пишется как PENALTY
 → points.awarded Kafka event НЕ уходит
 → Challenge progress НЕ меняется
 
-
-
-
-ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 29.05.2026!!!
+ПОРЯДОК ДЛЯ ПОСТМАНА В ДЕМО ФЛОУ НА МОМЕНТ 08.06.2026!!!
