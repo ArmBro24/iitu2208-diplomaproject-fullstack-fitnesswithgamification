@@ -77,7 +77,7 @@ const useStore = create((set, get) => ({
     selectedTraining: null,
     sessions: [],
     clients: [],
-
+    categories: [],
     pendingTrainers: [],
 
     fetchPendingTrainers: async () => {
@@ -89,6 +89,19 @@ const useStore = create((set, get) => ({
             set({ pendingTrainers: response.data });
         } catch (error) {
             console.error("Failed to fetch pending trainers:", error);
+        }
+    },
+
+    fetchCategories: async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_BASE_URL}/categories`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            console.log("🔥 Категории из админки успешно загружены:", response.data);
+            set({ categories: response.data });
+        } catch (error) {
+            console.error("Failed to fetch admin categories:", error);
         }
     },
 
@@ -265,6 +278,19 @@ const useStore = create((set, get) => ({
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
 
+                        let hasAttendedSession = false;
+                        try {
+                            const sessionsResponse = await axios.get(`${API_BASE_URL}/sessions/member/${m.clientId}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+
+                            hasAttendedSession = sessionsResponse.data?.some(
+                                session => session.status?.toUpperCase() === 'ATTENDED'
+                            );
+                        } catch (sessionError) {
+                            console.error(`Failed to fetch sessions for client ${m.clientId}:`, sessionError);
+                        }
+
                         const nickname = getUserNickname(userResponse.data);
 
                         let finalName;
@@ -280,7 +306,8 @@ const useStore = create((set, get) => ({
                             level: "Lv. 1",
                             attendance: "100%",
                             progress: 0,
-                            status: "Active",
+                            status: hasAttendedSession ? "Needs review" : "Active",
+                            progressRequestPending: hasAttendedSession,
                             goal: "Not set"
                         };
                     } catch (userError) {
@@ -429,17 +456,9 @@ const useStore = create((set, get) => ({
             alert("Workout assigned successfully!");
             return response.data;
         } catch (error) {
-            if (error.response && error.response.data) {
-                console.error("Backend Error Details:", error.response.data);
-            }
-            console.error("Full Error object:", error);
-            if (error.response?.status === 403) {
-                throw new Error('Server rejected the request because the current token is not a trainer token. Please log out and sign in as a trainer.');
-            }
-            if (error.response?.status === 401) {
-                throw new Error('Your session expired. Please log in again as a trainer.');
-            }
-            throw error;
+            const message = error.response?.data?.detail || error.response?.data?.message || error.message;
+            console.error("Backend Error Details:", message);
+            throw new Error(message);
         }
     },
 

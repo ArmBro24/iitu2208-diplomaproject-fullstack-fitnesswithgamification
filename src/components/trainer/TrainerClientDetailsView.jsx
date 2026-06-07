@@ -1,7 +1,10 @@
-import React from 'react';
-import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser, FiCalendar } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser, FiCalendar, FiCheck } from 'react-icons/fi';
 import avatarMe from '../../assets/avatars/avatar-me.png';
 import { InfoBox, SectionCard } from './TrainerShared.jsx';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8081/api/training';
 
 const TrainerClientDetailsView = ({
                                       onBack,
@@ -9,33 +12,94 @@ const TrainerClientDetailsView = ({
                                       onAssignWorkout,
                                       onRequestProgressUpdate,
                                       selectedClient,
-                                      clientSessions = []
+                                      clientSessions = [],
+                                      onRefreshData
                                   }) => {
     const now = new Date();
+    const [actionLoading, setActionLoading] = useState(false);
 
-    const nextWorkout = clientSessions
-        .filter(s => new Date(s.startsAt) > now && s.status !== 'REQUESTED')
-        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
+    // Логика фильтрации
+    const activeWorkouts = clientSessions
+        .filter(s => s.status !== 'COMPLETED')
+        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
+
+    const workoutHistory = clientSessions
+        .filter(s => s.status === 'COMPLETED')
+        .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt));
 
     const pendingRequests = clientSessions
         .filter(s => s.status === 'REQUESTED')
         .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
 
-    const workoutHistory = clientSessions
-        .filter(s => new Date(s.endsAt) < now)
-        .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt));
+    const nextWorkout = activeWorkouts.find(s => new Date(s.startsAt) > now && s.status !== 'REQUESTED');
+
+    const handleApproveLog = async (session) => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const rewardPoints = session.points?.total || session.points || 170;
+
+            await axios.patch(`${API_BASE_URL}/logs/${session.id}/approve`, {
+                points: rewardPoints,
+                coachComment: "Excellent execution! Points granted."
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            alert(`Workout approved! ${rewardPoints} points have been added.`);
+            if (onRefreshData) onRefreshData();
+        } catch (e) {
+            console.error("Error approving workout log:", e);
+            alert(`Failed to approve: ${e.response?.data?.message || e.message}`);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Общий рендерер карточки
+    const renderSessionCard = (session) => (
+        <div key={session.id} className="rounded-[22px] border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.06]">
+            <div className="flex justify-between items-center">
+                <div className="flex gap-3">
+                    <div className="mt-1 text-[#dce8c5]"><FiCalendar size={16}/></div>
+                    <div>
+                        <p className="font-bold text-[#f8efe4]">{session.title}</p>
+                        <p className="text-xs text-[#d7cabc] mt-1">
+                            {new Date(session.startsAt).toLocaleDateString('ru-RU')} •
+                            {new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    {session.status === 'SUBMITTED' && (
+                        <button
+                            onClick={() => handleApproveLog(session)}
+                            disabled={actionLoading}
+                            className="flex items-center gap-1 rounded-full bg-[#c1cf98] px-3 py-1 text-xs font-semibold text-black transition-all hover:bg-[#b0c085] disabled:opacity-50"
+                        >
+                            <FiCheck size={12}/> Review
+                        </button>
+                    )}
+                    <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full ${
+                        session.status === 'SUBMITTED' ? 'bg-yellow-500/20 text-yellow-300' :
+                            session.status === 'CONFIRMED' ? 'bg-blue-500/20 text-blue-300' :
+                                session.status === 'REQUESTED' ? 'bg-purple-500/20 text-purple-300' :
+                                    'bg-white/10 text-white/60'
+                    }`}>
+                        {session.status === 'CONFIRMED' ? 'AWAITING' : session.status}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="px-4 pb-24 pt-5 sm:px-6 md:px-8 md:pb-10 md:pt-7 lg:px-12 lg:py-10">
             <div className="mx-auto max-w-[1040px]">
                 <header className="flex items-center justify-between">
-                    <button onClick={onBack} className="rounded-full p-2 text-[#eee7da] transition-colors hover:bg-white/10">
-                        <FiArrowLeft size={26} />
-                    </button>
+                    <button onClick={onBack} className="rounded-full p-2 text-[#eee7da] transition-colors hover:bg-white/10"><FiArrowLeft size={26} /></button>
                     <h1 className="text-[1.8rem] font-medium tracking-tight text-white md:text-[2rem]">Client Details</h1>
-                    <button onClick={onOpenProfile} className="rounded-full p-2 text-[#ded6c4] transition-colors hover:bg-white/10 lg:hidden">
-                        <FiUser size={20} />
-                    </button>
+                    <button onClick={onOpenProfile} className="rounded-full p-2 text-[#ded6c4] transition-colors hover:bg-white/10 lg:hidden"><FiUser size={20} /></button>
                     <div className="hidden lg:block lg:w-10" />
                 </header>
 
@@ -52,68 +116,29 @@ const TrainerClientDetailsView = ({
                                     <p className="mt-1 text-sm text-[#d7cabc]">{selectedClient.goal}</p>
                                 </div>
                             </div>
-
                             <div className="mt-5 grid grid-cols-2 gap-3">
                                 <InfoBox label="Level" value={selectedClient.level} />
                                 <InfoBox label="Progress" value={`${selectedClient.progress}%`} />
                                 <InfoBox label="Streak" value={selectedClient.streak} />
                                 <InfoBox label="Status" value={selectedClient.status} />
                             </div>
-
                             <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-[#efe4d0]/60">Next Workout</p>
                                 <p className="mt-3 text-[1.1rem] font-semibold text-[#f8efe4]">
-                                    {nextWorkout
-                                        ? `${nextWorkout.title} (${new Date(nextWorkout.startsAt).toLocaleDateString('ru-RU')})`
-                                        : 'Not scheduled'}
+                                    {nextWorkout ? `${nextWorkout.title} (${new Date(nextWorkout.startsAt).toLocaleDateString('ru-RU')})` : 'Not scheduled'}
                                 </p>
-                            </div>
-
-                            <div className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
-                                <p className="text-xs uppercase tracking-[0.18em] text-[#f0ddd6]/60">Progress request</p>
-                                <div className="mt-3 flex flex-col gap-2">
-                                    {pendingRequests.length > 0 ? (
-                                        pendingRequests.map(req => (
-                                            <div key={req.id} className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
-                                                <span className="text-sm text-[#f8efe4] font-medium">{req.title}</span>
-                                                <span className="text-xs text-[#dfd2c4]">{new Date(req.startsAt).toLocaleDateString('ru-RU')}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <span className="text-sm text-[#edf0d5] bg-[rgba(108,115,63,0.3)] px-3 py-1 rounded-full w-fit">
-                                            No pending requests
-                                        </span>
-                                    )}
-                                </div>
                             </div>
                         </div>
 
+                        <SectionCard title="Active & Upcoming">
+                            <div className="space-y-3">
+                                {activeWorkouts.length > 0 ? activeWorkouts.map(renderSessionCard) : <p className="text-sm text-center italic py-4 text-white/50">No active workouts.</p>}
+                            </div>
+                        </SectionCard>
+
                         <SectionCard title="Workout History">
                             <div className="space-y-3">
-                                {workoutHistory.length > 0 ? (
-                                    workoutHistory.map((session) => (
-                                        <div key={session.id} className="rounded-[22px] border border-white/5 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.06]">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex gap-3">
-                                                    <div className="mt-1 text-[#dce8c5]"><FiCalendar size={16} /></div>
-                                                    <div>
-                                                        <p className="font-bold text-[#f8efe4]">{session.title}</p>
-                                                        <p className="text-xs text-[#d7cabc] mt-1">
-                                                            {new Date(session.startsAt).toLocaleDateString('ru-RU')} • {new Date(session.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full ${
-                                                    session.status === 'ATTENDED' || session.status === 'COMPLETED' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/60'
-                                                }`}>
-                                                    {session.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-sm leading-relaxed text-[#f3e8dc]/50 italic py-4 text-center">No past workouts.</p>
-                                )}
+                                {workoutHistory.length > 0 ? workoutHistory.map(renderSessionCard) : <p className="text-sm text-center italic py-4 text-white/50">No past workouts.</p>}
                             </div>
                         </SectionCard>
                     </div>
@@ -121,16 +146,14 @@ const TrainerClientDetailsView = ({
                     <div className="space-y-5">
                         <SectionCard title="Progress">
                             <div className="space-y-4">
-                                <StatBar label="Challenge completion" value={selectedClient.progress} />
-                                <StatBar label="Consistency score" value={Math.min(selectedClient.progress + 8, 100)} />
-                                <StatBar label="Momentum score" value={Math.min(selectedClient.progress + 4, 100)} />
+                                <StatBar label="Challenge completion" value={selectedClient.progress}/>
+                                <StatBar label="Consistency score" value={Math.min(selectedClient.progress + 8, 100)}/>
+                                <StatBar label="Momentum score" value={Math.min(selectedClient.progress + 4, 100)}/>
                             </div>
                         </SectionCard>
                         <SectionCard title="Activity">
                             <div className="space-y-3">
-                                {(selectedClient.activity ?? []).map((item, index) => (
-                                    <ActivityRow key={index} title={item.title} subtitle={item.subtitle} />
-                                ))}
+                                {(selectedClient.activity ?? []).map((item, index) => <ActivityRow key={index} title={item.title} subtitle={item.subtitle} />)}
                             </div>
                         </SectionCard>
                         <SectionCard title="Trainer Actions">

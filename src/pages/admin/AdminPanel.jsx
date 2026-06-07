@@ -25,6 +25,7 @@ import {
     FiTrash2
 } from 'react-icons/fi';
 import Background from '../../components/common/Background.jsx';
+import AdminCategoriesView from '../../components/admin/AdminCategoriesView.jsx';
 import useStore from '../../store/useStore.js';
 import { createAdminChallenge, fetchAdminDashboard } from '../../utils/adminApi.js';
 import { getUserDisplayName, getUserInitials, getUserNickname } from '../../utils/userDisplay.js';
@@ -159,6 +160,7 @@ const AdminPanel = ({ onLogout }) => {
                                     onCreated={loadDashboard}
                                 />
                             )}
+                            {activeView === 'categories' && <AdminCategoriesView />}
                             {activeView === 'monitoring' && <MonitoringView services={dashboard.services} isLoading={isLoading} />}
                         </div>
                     </main>
@@ -682,6 +684,7 @@ const adminNavItems = [
     { id: 'overview', label: 'Overview', icon: FiGrid },
     { id: 'users', label: 'Users', icon: FiUsers },
     { id: 'relationships', label: 'Relationships', icon: FiUserCheck },
+    { id: 'categories', label: 'Workout Points', icon: FiActivity },
     { id: 'reviews', label: 'Reviews', icon: FiFlag },
     { id: 'payments', label: 'Payments', icon: FiCreditCard },
     { id: 'challenges', label: 'Challenges', icon: FiAward },
@@ -692,6 +695,7 @@ const viewTitles = {
     overview: 'Admin Dashboard',
     users: 'Users Management',
     relationships: 'Relationship Moderation',
+    categories: 'Dynamic Points Config',
     reviews: 'Reviews and Reports',
     payments: 'Subscriptions and Payments',
     challenges: 'Challenges',

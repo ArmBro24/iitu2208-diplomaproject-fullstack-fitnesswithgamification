@@ -11,7 +11,15 @@ import ProfileRpgProgress from '../../components/profile/ProfileRpgProgress.jsx'
 
 const ClientProfile = () => {
     const navigate = useNavigate();
-    const { challenges, currentUser, sessions, userStats, fetchChallenges } = useStore();
+    const {
+        challenges,
+        currentUser,
+        sessions,
+        userStats,
+        fetchChallenges,
+        fetchUserStats
+    } = useStore();
+
     const displayName = getUserDisplayName(currentUser);
     const nickname = getUserNickname(currentUser);
     const initials = getUserInitials(currentUser);
@@ -19,8 +27,9 @@ const ClientProfile = () => {
     useEffect(() => {
         if (currentUser?.id) {
             fetchChallenges(currentUser.id);
+            fetchUserStats(currentUser.id);
         }
-    }, [currentUser?.id, fetchChallenges]);
+    }, [currentUser?.id, fetchChallenges, fetchUserStats]);
 
     const stats = [
         { label: 'Points', value: userStats?.points || 0, icon: FiAward },

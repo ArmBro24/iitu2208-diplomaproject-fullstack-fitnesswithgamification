@@ -48,3 +48,24 @@ export const fetchAdminDashboard = async () => {
 
 export const createAdminChallenge = (challenge) =>
     api.post('/api/challenges', challenge, authConfig());
+
+const API_BASE = '/api/training/admin';
+
+export const fetchTrainingCategories = async () => {
+    const response = await api.get(`${API_BASE}/categories`, authConfig());
+    return response.data;
+};
+
+export const createTrainingCategory = async (categoryData) => {
+    const response = await api.post(`${API_BASE}/categories`, categoryData, authConfig());
+    return response.data;
+};
+
+export const updateTrainingCategory = async (id, categoryData) => {
+    const response = await api.put(`${API_BASE}/categories/${id}`, categoryData, authConfig());
+    return response.data;
+};
+
+export const deleteTrainingCategory = async (id) => {
+    await api.delete(`${API_BASE}/categories/${id}`, authConfig());
+};

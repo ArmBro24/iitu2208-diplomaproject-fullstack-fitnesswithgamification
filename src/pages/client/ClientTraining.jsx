@@ -16,6 +16,7 @@ const ClientTraining = () => {
 
     const [isApproving, setIsApproving] = useState(false);
     const [exercises, setExercises] = useState([]);
+    const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
         if (selectedTraining?.exercises) {
@@ -39,7 +40,18 @@ const ClientTraining = () => {
     }
 
     const data = selectedTraining;
+
+    const statusLower = data.status?.toLowerCase();
+    const isRequested = statusLower === 'requested';
+    const isCanceled = statusLower === 'canceled';
+    const isSubmitted = statusLower === 'submitted';
+    const isApproved = statusLower === 'completed';
+    const isEditable = statusLower === 'confirmed';
+
     const isPast = new Date() > new Date(data.endsAt);
+    const isMissed = data.status === 'MISSED' || (data.status === 'CONFIRMED' && isPast);
+    const canSubmit = isEditable && !isPast;
+    const canCancel = !isPast && (isRequested || isEditable);
 
     const displayPoints = {
         total: data.points?.total || 0,
@@ -48,7 +60,6 @@ const ClientTraining = () => {
         motivation: data.points?.motivation || 0
     };
 
-    // Исправленный метод одобрения с явной передачей JWT-токена для предотвращения 403 ошибки
     const handleApprove = async () => {
         setIsApproving(true);
         try {
@@ -56,11 +67,10 @@ const ClientTraining = () => {
             await axios.patch(`${API_BASE_URL}/sessions/${selectedTraining.id}/status?status=CONFIRMED`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            // Обновляем статус в локальном Zustand сторе, чтобы интерфейс перерисовался
             await updateStatus(selectedTraining.id, 'CONFIRMED');
         } catch (e) {
-            console.error("Ошибка при подтверждении тренировки:", e);
-            alert("Ошибка доступа (403 Forbidden). Проверьте права пользователя или авторизацию.");
+            console.error("Error confirming workout:", e);
+            alert("Access denied (403 Forbidden). Please check authentication.");
         } finally {
             setIsApproving(false);
         }
@@ -69,10 +79,10 @@ const ClientTraining = () => {
     const handleCancel = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.patch(`${API_BASE_URL}/sessions/${selectedTraining.id}/status?status=CANCELLED`, {}, {
+            await axios.patch(`${API_BASE_URL}/sessions/${selectedTraining.id}/status?status=CANCELED`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            await updateStatus(data.id, 'CANCELLED');
+            await updateStatus(data.id, 'CANCELED');
             navigate('/home');
         } catch (e) {
             console.error(e);
@@ -80,6 +90,14 @@ const ClientTraining = () => {
     };
 
     const handleSubmitResults = async () => {
+        const now = new Date();
+        const trainingEndTime = new Date(selectedTraining.endsAt);
+
+        if (now < trainingEndTime) {
+            setShowModal(true);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             const logData = {
@@ -87,14 +105,23 @@ const ClientTraining = () => {
                 memberId: currentUser.id,
                 coachId: selectedTraining.coachId,
                 memberComment: `Completed ${exercises.length} exercises.`,
+                exercises: exercises.map(ex => ({
+                    id: ex.id,
+                    name: ex.name,
+                    planned: ex.planned || 0,
+                    done: (ex.done || 0) > (ex.planned || 0) ? ex.planned : (ex.done || 0)
+                }))
             };
+
             await axios.post(`${API_BASE_URL}/logs`, logData, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            await updateStatus(selectedTraining.id, 'ATTENDED');
+
+            await updateStatus(selectedTraining.id, 'SUBMITTED');
             navigate('/home');
         } catch (e) {
-            console.error(e);
+            console.error("Error submitting results:", e);
+            alert("Failed to submit results to the coach.");
         }
     };
 
@@ -122,23 +149,20 @@ const ClientTraining = () => {
                             <FiArrowLeft className="text-white"/>
                         </button>
                         <div className="flex-grow flex items-center justify-center gap-3 pr-12">
-                            <span className={`text-lg font-medium lowercase ${getStatusColor(data.status)}`}>{data.status}</span>
+                            <span className={`text-lg font-medium lowercase ${getStatusColor(isMissed ? 'missed' : data.status)}`}>{isMissed ? 'missed' : data.status}</span>
                             <h1 className="text-xl md:text-3xl font-medium text-white">Workout</h1>
                         </div>
                     </nav>
 
                     <div className="flex flex-col md:grid md:grid-cols-[1.2fr_0.8fr] w-full max-w-[1400px] mx-auto px-6 md:px-16 gap-4 md:gap-8 pb-12">
-
-                        {/* Заголовок тренировки */}
                         <div className="md:col-start-2 md:row-start-1 flex flex-col justify-center">
                             <div className="flex items-center gap-4 text-gray-300 font-medium text-lg">
                                 <span>{data.date}</span>
-                                <span className={`${getStatusColor(data.status)} font-bold`}>{data.time}</span>
+                                <span className={`${getStatusColor(isMissed ? 'missed' : data.status)} font-bold`}>{data.time}</span>
                             </div>
                             <h2 className="text-3xl md:text-5xl font-bold mt-1">{data.title}</h2>
                         </div>
 
-                        {/* Таблица упражнений */}
                         <div className="md:col-start-1 md:row-start-1 md:row-span-2 bg-black/40 backdrop-blur-md rounded-[40px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-between">
                             <table className="w-full border-collapse">
                                 <thead>
@@ -154,26 +178,42 @@ const ClientTraining = () => {
                                         <td className="p-5 text-white/90 font-medium">{ex.name}</td>
                                         <td className="p-5 text-center text-white/40">{ex.planned}</td>
                                         <td className="p-5 text-center">
-                                            <input type="number" value={ex.done || 0} onChange={(e) => handleDoneChange(idx, e.target.value)} className="w-12 bg-white/5 border border-white/10 rounded-lg py-1 text-center" />
+                                            {isEditable && !isPast ? (
+                                                <input
+                                                    type="number"
+                                                    value={ex.done || 0}
+                                                    onChange={(e) => handleDoneChange(idx, e.target.value)}
+                                                    className="w-12 bg-white/5 border border-white/10 rounded-lg py-1 text-center"
+                                                />
+                                            ) : (
+                                                <span className="text-white/60 font-mono">{ex.done || 0}</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
                                 </tbody>
                             </table>
-                            {isPast && data.status?.toLowerCase() === 'confirmed' && (
+                            {isEditable && (
                                 <div className="p-6 border-t border-white/5">
-                                    <button onClick={handleSubmitResults} className="w-full py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:brightness-110 transition-all">
-                                        Send Results to Coach
+                                    <button
+                                        onClick={handleSubmitResults}
+                                        disabled={!canSubmit}
+                                        className={`w-full py-4 font-bold rounded-2xl transition-all ${
+                                            canSubmit
+                                                ? 'bg-[#c1cf98] text-black hover:brightness-110'
+                                                : 'bg-white/5 text-white/30 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        {isPast ? "Training time has expired" : "Send Results to Coach"}
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Боковая панель поинтов (Опыт RPG) */}
                         <div className="md:col-start-2 md:row-start-2 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start gap-4 md:gap-6 pt-4 md:pt-0">
                             <div className="shrink-0">
-                                <span className={`text-4xl md:text-6xl font-bold tracking-tighter ${data.status === 'missed' ? 'text-[#f87171]' : 'text-[#c1cf98]'}`}>
-                                    {data.status === 'missed' ? '-' : '+'}{displayPoints.total} pts
+                                <span className={`text-4xl md:text-6xl font-bold tracking-tighter ${isMissed ? 'text-[#f87171]' : 'text-[#c1cf98]'}`}>
+                                    {isMissed ? '-' : '+'}{displayPoints.total} pts
                                 </span>
                             </div>
                             <div className="flex flex-col gap-y-1 md:gap-y-3">
@@ -183,29 +223,62 @@ const ClientTraining = () => {
                             </div>
                         </div>
 
-                        {/* КАРТОЧКА ЗАПРОСА: теперь находится строго внизу под таблицей (строка 3 грида) */}
-                        {data.status?.toLowerCase() === 'requested' && (
-                            <div className="md:col-start-1 md:row-start-3 mt-4">
-                                <div className="bg-black/40 border border-white/10 rounded-[30px] p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-xl">
-                                    <div>
-                                        <h3 className="text-[#c1cf98] text-xl font-bold">New Workout Request</h3>
-                                        <p className="text-white/60 text-sm">Confirm or decline this session.</p>
-                                    </div>
-                                    <div className="flex gap-4 w-full md:w-auto">
-                                        <button onClick={handleApprove} disabled={isApproving} className="flex-1 md:px-8 py-4 bg-[#c1cf98] text-black font-bold rounded-2xl hover:bg-[#d4e2ae] transition-all disabled:opacity-50">
-                                            {isApproving ? '...' : 'I will attend'}
-                                        </button>
-                                        <button onClick={handleCancel} className="flex-1 md:px-8 py-4 bg-red-500/20 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500/30 transition-all">
-                                            Cancel
-                                        </button>
-                                    </div>
+                        {isRequested && (
+                            <div className="md:col-span-2 bg-black/40 border border-[#c1cf98]/20 rounded-[30px] p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-xl mt-4">
+                                <div>
+                                    <h3 className="text-[#c1cf98] text-xl font-bold">New Workout Request</h3>
+                                    <p className="text-white/60 text-sm">Review the plan and confirm your attendance.</p>
+                                </div>
+                                <div className="flex gap-4 w-full md:w-auto">
+                                    <button onClick={handleApprove} disabled={isApproving} className="flex-1 md:px-8 py-4 bg-[#c1cf98] text-black font-bold rounded-2xl">Confirm</button>
+                                    <button
+                                        onClick={handleCancel}
+                                        disabled={!canCancel}
+                                        className={`flex-1 md:px-8 py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl ${!canCancel ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        Decline
+                                    </button>
                                 </div>
                             </div>
                         )}
 
+                        {isSubmitted && (
+                            <div className="md:col-span-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-[30px] p-8 flex items-center justify-center mt-4">
+                                <div className="text-center">
+                                    <h3 className="text-white text-xl font-bold mb-2">Results submitted!</h3>
+                                    <p className="text-white/60">Your coach will review your performance soon.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {isApproved && (
+                            <div className="md:col-span-2 bg-black/40 backdrop-blur-md border border-[#c1cf98]/20 rounded-[30px] p-8 flex items-center justify-center mt-4">
+                                <div className="text-center">
+                                    <h3 className="text-[#c1cf98] text-xl font-bold mb-2">Great job!</h3>
+                                    <p className="text-white/60">Points have been credited to your profile. Keep it up!</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/30 backdrop-blur-sm transition-all duration-300">
+                    <div className="bg-black/[0.45] backdrop-blur-[16px] border border-white/10 p-8 rounded-[30px] max-w-sm w-full text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                        <h3 className="text-xl font-bold text-white mb-3">Training in Progress</h3>
+                        <p className="text-white/60 mb-8 text-sm">
+                            Please submit your results only after the training session has finished.
+                        </p>
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="w-full py-4 bg-[#626e49] text-white font-bold rounded-2xl border border-transparent hover:bg-[#707c57] transition-all duration-300"
+                        >
+                            Understood
+                        </button>
+                    </div>
+                </div>
+            )}
         </Background>
     );
 };

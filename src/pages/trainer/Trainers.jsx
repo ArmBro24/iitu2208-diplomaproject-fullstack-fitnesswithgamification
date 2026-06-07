@@ -306,6 +306,7 @@ const Trainers = ({ onLogout }) => {
                                     onRequestProgressUpdate={handleRequestProgressUpdate}
                                     selectedClient={selectedClient}
                                     clientSessions={sessions}
+                                    onRefreshData={() => fetchSessions(selectedClientId)}
                                 />
                             )}
 
