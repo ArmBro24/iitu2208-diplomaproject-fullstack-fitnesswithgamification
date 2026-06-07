@@ -9,6 +9,7 @@ public record AdminChallengeResponse(
         String title,
         String description,
         Integer targetPoints,
+        Integer rewardPoints,
         ChallengeStatus status,
         LocalDateTime startsAt,
         LocalDateTime endsAt,

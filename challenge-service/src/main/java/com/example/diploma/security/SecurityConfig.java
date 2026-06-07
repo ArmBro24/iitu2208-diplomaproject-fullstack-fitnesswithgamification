@@ -20,6 +20,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .logout(logout -> logout.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/challenges/catalog").permitAll()
@@ -30,8 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/challenges/*/leave").hasRole("MEMBER")
                         .requestMatchers(HttpMethod.GET, "/api/challenges/member/*").hasRole("MEMBER")
                         .requestMatchers(HttpMethod.GET, "/api/challenges/me").hasRole("MEMBER")
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers(HttpMethod.POST, "/api/challenges/{id}/progress").hasRole("MEMBER")                )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -1,10 +1,10 @@
 package com.example.diploma.controller;
 
-
 import com.example.diploma.controller.dto.AdminChallengeResponse;
 import com.example.diploma.controller.dto.CreateChallengeRequest;
 import com.example.diploma.controller.dto.JoinChallengeRequest;
 import com.example.diploma.controller.dto.MemberChallengeResponse;
+import com.example.diploma.controller.dto.ProgressRequest;
 import com.example.diploma.model.Challenge;
 import com.example.diploma.model.ChallengeParticipant;
 import com.example.diploma.model.enums.ChallengeStatus;
@@ -42,6 +42,7 @@ public class ChallengeController {
                         challenge.getTitle(),
                         challenge.getDescription(),
                         challenge.getTargetPoints(),
+                        challenge.getRewardPoints(),
                         challenge.getStatus(),
                         challenge.getStartsAt(),
                         challenge.getEndsAt(),
@@ -65,6 +66,7 @@ public class ChallengeController {
                 .title(req.title())
                 .description(req.description())
                 .targetPoints(req.targetPoints())
+                .rewardPoints(req.rewardPoints())
                 .startsAt(req.startsAt())
                 .endsAt(req.endsAt())
                 .status(ChallengeStatus.ACTIVE)
@@ -137,6 +139,17 @@ public class ChallengeController {
     @GetMapping("/me")
     public List<MemberChallengeResponse> getMyChallenges(@RequestHeader("Authorization") String authorization) {
         return getPersonalChallenges(getCurrentUserId(authorization));
+    }
+
+    @PostMapping("/{challengeId}/progress")
+    @ResponseStatus(HttpStatus.OK)
+    public void reportProgress(
+            @PathVariable Long challengeId,
+            @RequestBody @Valid ProgressRequest req,
+            @RequestHeader("Authorization") String authorization
+    ) {
+        Long memberId = getCurrentUserId(authorization);
+        challengeService.applyProgress(memberId, req.points());
     }
 
     private List<MemberChallengeResponse> getPersonalChallenges(Long memberId) {

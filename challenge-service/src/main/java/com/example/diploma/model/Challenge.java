@@ -40,4 +40,7 @@ public class Challenge {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    private Integer rewardPoints;
 }

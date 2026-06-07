@@ -187,7 +187,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 challengeEventProducer.sendChallengeCompleted(new ChallengeCompletedEvent(
                         saved.getChallengeId(),
                         saved.getMemberId(),
-                        saved.getCurrentPoints(),
+                        challenge.getRewardPoints(),
                         now
                 ));
             }

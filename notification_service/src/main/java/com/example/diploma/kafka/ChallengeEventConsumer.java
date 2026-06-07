@@ -3,6 +3,7 @@ package com.example.diploma.kafka;
 import com.example.diploma.event.ChallengeCompletedEvent;
 import com.example.diploma.model.Notification;
 import com.example.diploma.model.enums.NotificationType;
+import com.example.diploma.service.GamificationService;
 import com.example.diploma.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class ChallengeEventConsumer {
 
     private final NotificationService notificationService;
+    private final GamificationService gamificationService;
 
     @KafkaListener(
             topics = KafkaTopics.CHALLENGE_COMPLETED,
@@ -25,6 +27,13 @@ public class ChallengeEventConsumer {
         log.info("NOTIFICATION CHALLENGE COMPLETED: challengeId={}, memberId={}",
                 event.challengeId(),
                 event.memberId()
+        );
+
+        String comment = "Completed challenge #" + event.challengeId();
+        gamificationService.applyChallengePoints(
+                event.memberId(),
+                event.finalPoints(),
+                comment
         );
 
         Notification notification = Notification.builder()

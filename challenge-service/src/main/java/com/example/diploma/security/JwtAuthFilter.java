@@ -1,6 +1,5 @@
 package com.example.diploma.security;
 
-
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,19 +27,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String auth = request.getHeader("Authorization");
+        System.out.println("DEBUG: Request URL: " + request.getRequestURI());
+        System.out.println("DEBUG: Auth header: " + auth);
 
         if (auth != null && auth.startsWith("Bearer ")) {
-            String token = auth.substring(7);
+            try {
+                String token = auth.substring(7);
+                Claims claims = jwtService.parse(token);
 
-            Claims claims = jwtService.parse(token);
+                String email = claims.getSubject();
+                String role = String.valueOf(claims.get("role"));
 
-            String email = claims.getSubject(); // у тебя subject = email
-            String role = String.valueOf(claims.get("role")); // "ADMIN"/"COACH"/"MEMBER"
+                System.out.println("DEBUG: Token parsed. Email: " + email + ", Role: " + role);
 
-            var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                var authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            var authentication = new UsernamePasswordAuthenticationToken(email, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                System.out.println("DEBUG: Token validation failed: " + e.getMessage());
+            }
+        } else {
+            System.out.println("DEBUG: No valid Bearer token found");
         }
 
         filterChain.doFilter(request, response);

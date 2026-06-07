@@ -10,6 +10,7 @@ public record CreateChallengeRequest(
         @NotBlank String title,
         String description,
         @NotNull Integer targetPoints,
+        @NotNull Integer rewardPoints,
         @NotNull LocalDateTime startsAt,
         @NotNull LocalDateTime endsAt
 ) {}
