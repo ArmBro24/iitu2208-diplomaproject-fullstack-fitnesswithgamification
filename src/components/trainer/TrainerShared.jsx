@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiClock } from 'react-icons/fi';
-import avatarMe from '../../assets/avatars/avatar-me.png';
 import { accentClasses, avatarFrame, statusTextClass } from './trainerData.js';
+import { getClientAvatar } from './trainerAvatar.js';
 
 export const SectionCard = ({ title, actionLabel, onAction, children }) => (
     <section className="rounded-[28px] border border-white/10 bg-black/15 p-4 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-5">
@@ -34,9 +34,9 @@ export const WorkoutCard = ({ item, index, large = false }) => (
     <div className="flex items-center gap-4 rounded-[28px] border border-white/10 bg-black/15 px-4 py-4 shadow-[0_6px_20px_rgba(0,0,0,0.12)] transition-all hover:border-[#c1cf98]/35 hover:bg-white/10">
         <div className={`relative shrink-0 overflow-hidden rounded-full border border-white/15 ${large ? 'h-[72px] w-[72px]' : 'h-[58px] w-[58px]'} ${avatarFrame(index)}`}>
             <img
-                src={avatarMe}
+                src={getClientAvatar(item)}
                 alt={item.client}
-                className="h-full w-full object-cover p-1"
+                className="h-full w-full object-cover"
             />
         </div>
 

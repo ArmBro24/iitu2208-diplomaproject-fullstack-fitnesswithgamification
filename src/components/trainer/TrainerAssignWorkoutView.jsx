@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FiArrowLeft, FiUser, FiTrash2, FiPlus } from 'react-icons/fi';
-import avatarMe from '../../assets/avatars/avatar-me.png';
 import { workoutTemplates as staticTemplates } from './trainerData.js';
 import { InfoBox } from './TrainerShared.jsx';
+import { getClientAvatar } from './trainerAvatar.js';
 import useStore from '../../store/useStore.js';
 
 const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, selectedClient }) => {
@@ -155,7 +155,7 @@ const TrainerAssignWorkoutView = ({ onBack, onOpenProfile, onAssignWorkout, sele
                     <div className="h-fit rounded-[28px] border border-white/10 bg-black/15 p-5 shadow-[0_10px_35px_rgba(0,0,0,0.14)] md:p-6">
                         <div className="flex items-center gap-4">
                             <div className="h-[84px] w-[84px] overflow-hidden rounded-full border border-white/15 bg-neutral-800">
-                                <img src={avatarMe} alt={selectedClient?.name} className="h-full w-full object-cover p-1" />
+                                <img src={getClientAvatar(selectedClient)} alt={selectedClient?.name} className="h-full w-full object-cover" />
                             </div>
                             <div>
                                 <p className="text-sm uppercase tracking-widest text-white/40">Assigning to</p>

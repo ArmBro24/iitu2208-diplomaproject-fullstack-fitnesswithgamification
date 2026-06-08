@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiArrowLeft, FiChevronRight, FiTrendingUp, FiUser, FiCalendar, FiCheck } from 'react-icons/fi';
-import avatarMe from '../../assets/avatars/avatar-me.png';
 import { InfoBox, SectionCard } from './TrainerShared.jsx';
+import { getClientAvatar } from './trainerAvatar.js';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8081/api/training';
@@ -109,7 +109,7 @@ const TrainerClientDetailsView = ({
                             <p className="text-sm uppercase tracking-[0.18em] text-[#f0ddd6]/55">Profile</p>
                             <div className="mt-4 flex items-center gap-4">
                                 <div className="relative h-[88px] w-[88px] overflow-hidden rounded-full border border-white/15 bg-[radial-gradient(circle_at_30%_30%,#f19add,#704436)]">
-                                    <img src={avatarMe} alt={selectedClient.name} className="h-full w-full object-cover p-1" />
+                                    <img src={getClientAvatar(selectedClient)} alt={selectedClient.name} className="h-full w-full object-cover" />
                                 </div>
                                 <div>
                                     <h2 className="text-[1.7rem] font-black text-[#f5efe7]">{selectedClient.name}</h2>

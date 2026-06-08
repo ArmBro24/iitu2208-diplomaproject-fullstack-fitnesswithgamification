@@ -13,9 +13,7 @@ import { createTrainerNavItems } from '../../components/trainer/trainerNavigatio
 import AIChat from '../../components/ai/AIChat.jsx';
 import {
     grainGradient,
-    initialAssignedWorkouts,
     initialClients,
-    initialScheduleItems,
     noiseStyle
 } from '../../components/trainer/trainerData.js';
 import { setActiveRole } from '../../utils/roleRouting.js';
@@ -25,7 +23,16 @@ const TRAINER_STORAGE_KEY = 'herofit-trainer-dashboard';
 const Trainers = ({ onLogout }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { clients: storeClients, fetchMyClients, createTraining, fetchSessions, sessions, currentUser } = useStore();
+    const {
+        clients: storeClients,
+        fetchMyClients,
+        createTraining,
+        fetchSessions,
+        fetchTrainerSchedule,
+        sessions,
+        trainerScheduleSessions,
+        currentUser
+    } = useStore();
     const currentCoachId = currentUser?.id;
 
     const [view, setView] = useState('dashboard');
@@ -42,8 +49,8 @@ const Trainers = ({ onLogout }) => {
     const setClients = React.useCallback((val) => {
         setLocalClients(val);
     }, []);
-    const [assignedWorkouts, setAssignedWorkouts] = useState(() => readStoredState().assignedWorkouts ?? initialAssignedWorkouts);
-    const [scheduleItems, setScheduleItems] = useState(() => readStoredState().scheduleItems ?? initialScheduleItems);
+    const [assignedWorkouts, setAssignedWorkouts] = useState([]);
+    const [scheduleItems, setScheduleItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState(() => readStoredState().selectedClientId ?? initialClients[0].id);
 
     const selectedClient = useMemo(
@@ -100,6 +107,20 @@ const Trainers = ({ onLogout }) => {
             fetchSessions(selectedClientId);
         }
     }, [selectedClientId, fetchSessions]);
+
+    useEffect(() => {
+        const clientIds = (storeClients ?? []).map((client) => client.id).filter(Boolean);
+        fetchTrainerSchedule(clientIds, currentCoachId);
+    }, [storeClients, currentCoachId, fetchTrainerSchedule]);
+
+    useEffect(() => {
+        const realScheduleItems = (trainerScheduleSessions ?? [])
+            .map((session) => mapTrainingSessionToScheduleItem(session, clients))
+            .sort((a, b) => new Date(a.startsAt || 0) - new Date(b.startsAt || 0));
+
+        setScheduleItems(realScheduleItems);
+        setAssignedWorkouts(realScheduleItems);
+    }, [clients, trainerScheduleSessions]);
 
     const keyMetrics = useMemo(() => {
         const missedWorkouts = scheduleItems.filter((item) => item.status === 'missed').length;
@@ -381,6 +402,7 @@ const mapTrainingSessionToScheduleItem = (session, clients) => {
         name: session.title ?? session.name ?? 'Workout',
         workout: session.title ?? session.workout ?? session.name ?? 'Workout',
         client: client?.name ?? `User #${session.memberId}`,
+        avatarUrl: client?.avatarUrl,
         memberId: session.memberId,
         coachId: session.coachId,
         startsAt,

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FiArrowLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
-import avatarMe from '../../assets/avatars/avatar-me.png';
+import { getClientAvatar } from './trainerAvatar.js';
 
 const TrainerClientsView = ({
     clients,
@@ -78,9 +78,9 @@ const TrainerClientsView = ({
                             <div className="flex items-center gap-4">
                                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-white/15 ${avatarTone(index)}`}>
                                     <img
-                                        src={avatarMe}
+                                        src={getClientAvatar(client)}
                                         alt={client.name}
-                                        className="h-full w-full object-cover p-1"
+                                        className="h-full w-full object-cover"
                                     />
                                 </div>
 

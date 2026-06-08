@@ -76,6 +76,7 @@ const useStore = create((set, get) => ({
     selectedTrainer: null,
     selectedTraining: null,
     sessions: [],
+    trainerScheduleSessions: [],
     clients: [],
     categories: [],
     pendingTrainers: [],
@@ -145,6 +146,7 @@ const useStore = create((set, get) => ({
         set({
             currentUser: { id: null, role: null, email: null },
             sessions: [],
+            trainerScheduleSessions: [],
             clients: [],
             challenges: [],
             challengesLoading: false,
@@ -303,6 +305,9 @@ const useStore = create((set, get) => ({
                         return {
                             id: m.clientId,
                             name: finalName,
+                            avatarUrl: userResponse.data.avatarUrl,
+                            phone: userResponse.data.phone,
+                            email: userResponse.data.email,
                             level: "Lv. 1",
                             attendance: "100%",
                             progress: 0,
@@ -315,6 +320,7 @@ const useStore = create((set, get) => ({
                         return {
                             id: m.clientId,
                             name: `User #${m.clientId}`,
+                            avatarUrl: null,
                             level: "Lv. 1",
                             attendance: "100%",
                             progress: 0,
@@ -400,8 +406,43 @@ const useStore = create((set, get) => ({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             set({ sessions: response.data });
+            return response.data;
         } catch (error) {
             console.error("Failed to fetch sessions:", error);
+            return [];
+        }
+    },
+
+    fetchTrainerSchedule: async (clientIds = [], coachId = null) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || clientIds.length === 0) {
+                set({ trainerScheduleSessions: [] });
+                return [];
+            }
+
+            const responses = await Promise.all(
+                clientIds.map((memberId) =>
+                    axios.get(`${API_BASE_URL}/sessions/member/${memberId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then((response) => response.data || [])
+                        .catch((error) => {
+                            console.error(`Failed to fetch schedule sessions for client ${memberId}:`, error);
+                            return [];
+                        })
+                )
+            );
+
+            const schedule = responses
+                .flat()
+                .filter((session) => !coachId || Number(session.coachId) === Number(coachId));
+
+            set({ trainerScheduleSessions: schedule });
+            return schedule;
+        } catch (error) {
+            console.error("Failed to fetch trainer schedule:", error);
+            set({ trainerScheduleSessions: [] });
+            return [];
         }
     },
 
@@ -450,7 +491,8 @@ const useStore = create((set, get) => ({
             });
 
             set((state) => ({
-                sessions: [...(state.sessions || []), response.data]
+                sessions: [...(state.sessions || []), response.data],
+                trainerScheduleSessions: [...(state.trainerScheduleSessions || []), response.data]
             }));
 
             alert("Workout assigned successfully!");
