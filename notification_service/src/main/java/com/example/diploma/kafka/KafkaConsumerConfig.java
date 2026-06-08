@@ -5,6 +5,7 @@ import com.example.diploma.event.ChallengeCompletedEvent;
 import com.example.diploma.event.PointsAwardedEvent;
 import com.example.diploma.event.PaymentCompletedEvent;
 import com.example.diploma.event.PaymentRefundedEvent;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +36,18 @@ public class KafkaConsumerConfig {
         return factoryFor(ChallengeCompletedEvent.class);
     }
 
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PaymentCompletedEvent>
+    paymentCompletedKafkaListenerContainerFactory() {
+        return factoryFor(PaymentCompletedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PaymentRefundedEvent>
+    paymentRefundedKafkaListenerContainerFactory() {
+        return factoryFor(PaymentRefundedEvent.class);
+    }
+
     private <T> ConcurrentKafkaListenerContainerFactory<String, T> factoryFor(Class<T> eventClass) {
         JsonDeserializer<T> jsonDeserializer = new JsonDeserializer<>(eventClass);
         jsonDeserializer.addTrustedPackages("com.example.diploma.event");
@@ -46,7 +59,10 @@ public class KafkaConsumerConfig {
 
         DefaultKafkaConsumerFactory<String, T> consumerFactory =
                 new DefaultKafkaConsumerFactory<>(
-                        Map.of("bootstrap.servers", bootstrapServers),
+                        Map.of(
+                                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers,
+                                ConsumerConfig.GROUP_ID_CONFIG, "notification-service"
+                        ),
                         new StringDeserializer(),
                         errorHandlingDeserializer
                 );
