@@ -44,6 +44,11 @@ public class PaymentController {
         return paymentService.getPaymentById(paymentId);
     }
 
+    @GetMapping("/admin")
+    public List<PaymentResponse> getAllPayments() {
+        return paymentService.getAllPayments();
+    }
+
     @GetMapping("/member/{memberId}")
     public List<PaymentResponse> getPaymentsByMemberId(@PathVariable Long memberId) {
         return paymentService.getPaymentsByMemberId(memberId);

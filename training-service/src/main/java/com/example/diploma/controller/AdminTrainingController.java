@@ -1,6 +1,7 @@
 package com.example.diploma.controller;
 
 import com.example.diploma.controller.dto.AdminMentorshipDto;
+import com.example.diploma.controller.dto.AdminSessionLogDto;
 import com.example.diploma.controller.dto.AdminTrainingOverviewDto;
 import com.example.diploma.model.TrainingCategory;
 import com.example.diploma.model.enums.SessionLogStatus;
@@ -44,6 +45,24 @@ public class AdminTrainingController {
                         mentorship.getClientId(),
                         mentorship.getStatus(),
                         mentorship.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    @GetMapping("/reviews")
+    public List<AdminSessionLogDto> getReviews() {
+        return sessionLogRepository.findAll().stream()
+                .map(log -> new AdminSessionLogDto(
+                        log.getId(),
+                        log.getSessionId(),
+                        log.getMemberId(),
+                        log.getCoachId(),
+                        log.getMemberComment(),
+                        log.getPointsAwarded(),
+                        log.getCoachComment(),
+                        log.getStatus(),
+                        log.getSubmittedAt(),
+                        log.getReviewedAt()
                 ))
                 .toList();
     }

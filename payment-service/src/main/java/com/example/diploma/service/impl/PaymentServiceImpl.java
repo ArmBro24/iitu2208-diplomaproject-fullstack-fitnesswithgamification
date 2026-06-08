@@ -195,6 +195,14 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public List<PaymentResponse> getAllPayments() {
+        return paymentRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
     public List<PaymentResponse> getPaymentsByMemberId(Long memberId) {
         if (memberId == null) {
             throw new IllegalArgumentException("Member id is required");
