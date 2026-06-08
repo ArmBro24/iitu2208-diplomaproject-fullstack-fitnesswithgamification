@@ -14,8 +14,14 @@ public class TrainingEventConsumer {
 
     private final GamificationService gamificationService;
 
-    @KafkaListener(topics = KafkaTopics.TRAINING_LOG_APPROVED)
+    @KafkaListener(
+            topics = KafkaTopics.TRAINING_LOG_APPROVED,
+            groupId = "test-group-123",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void onLogApproved(TrainingLogApprovedEvent event) {
+        log.info("--- [DEBUG] СОБЫТИЕ ПРИШЛО В GAMIFICATION-SERVICE ---");
+        log.info("Данные: sessionId={}, memberId={}, points={}", event.sessionId(), event.memberId(), event.points());
 
         log.info("GAMIFICATION RECEIVED: sessionId={}, memberId={}, points={}, approvedAt={}",
                 event.sessionId(),

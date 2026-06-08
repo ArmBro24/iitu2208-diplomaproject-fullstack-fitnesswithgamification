@@ -150,9 +150,9 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
     }
 
     @Override
-    public SessionLog approveLog(Long sessionId, Integer points, String coachComment) {
-        SessionLog existing = sessionLogRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("SessionLog not found for sessionId: " + sessionId));
+    public SessionLog approveLog(Long logId, Integer points, String coachComment) {
+        SessionLog existing = sessionLogRepository.findById(logId)
+                .orElseThrow(() -> new IllegalArgumentException("SessionLog not found for logId: " + logId));
 
         if (existing.getStatus() != SessionLogStatus.SUBMITTED &&
                 existing.getStatus() != SessionLogStatus.REVISED) {
@@ -198,7 +198,7 @@ public class TrainingSessionServiceImpl implements TrainingSessionService {
             log.error("Failed to send event to Kafka: {}", e.getMessage());
         }
 
-        log.info("Log for session {} approved with {} points", sessionId, points);
+        log.info("Log {} approved with {} points", logId, points);
         return saved;
     }
 
