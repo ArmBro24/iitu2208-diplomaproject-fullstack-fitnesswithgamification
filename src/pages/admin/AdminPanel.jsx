@@ -27,7 +27,13 @@ import {
 import Background from '../../components/common/Background.jsx';
 import AdminCategoriesView from '../../components/admin/AdminCategoriesView.jsx';
 import useStore from '../../store/useStore.js';
-import { createAdminChallenge, fetchAdminDashboard } from '../../utils/adminApi.js';
+import {
+    createAdminChallenge,
+    fetchAdminDashboard,
+    markPaymentFailed,
+    markPaymentSuccess,
+    refundPayment
+} from '../../utils/adminApi.js';
 import { getUserDisplayName, getUserInitials, getUserNickname } from '../../utils/userDisplay.js';
 
 const AdminPanel = ({ onLogout }) => {
@@ -38,6 +44,8 @@ const AdminPanel = ({ onLogout }) => {
     const [dashboard, setDashboard] = useState({ payload: {}, services: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
+    const [paymentFeedback, setPaymentFeedback] = useState('');
+    const [paymentActionId, setPaymentActionId] = useState(null);
 
     const [selectedPendingTrainer, setSelectedPendingTrainer] = useState(null);
 
@@ -100,6 +108,30 @@ const AdminPanel = ({ onLogout }) => {
 
     const unavailableServices = dashboard.services.filter((service) => service.status !== 'Online').length;
 
+    const handlePaymentAction = async (payment, action) => {
+        setPaymentActionId(`${payment.id}-${action}`);
+        setPaymentFeedback('');
+
+        try {
+            if (action === 'success') {
+                await markPaymentSuccess(payment.id);
+            } else if (action === 'failed') {
+                const reason = window.prompt('Failure reason', payment.failureReason || 'Declined by administrator');
+                if (!reason) return;
+                await markPaymentFailed(payment.id, reason);
+            } else if (action === 'refund') {
+                await refundPayment(payment.id);
+            }
+
+            setPaymentFeedback('Payment status updated.');
+            await loadDashboard();
+        } catch (error) {
+            setPaymentFeedback(error.response?.data?.message || 'Payment action failed.');
+        } finally {
+            setPaymentActionId(null);
+        }
+    };
+
     return (
         <Background>
             <div className="min-h-screen overflow-x-hidden text-white font-rubik md:p-5">
@@ -151,8 +183,23 @@ const AdminPanel = ({ onLogout }) => {
                                     isLoading={isLoading}
                                 />
                             )}
-                            {activeView === 'reviews' && <UnavailableModuleView module="Reports and review moderation" />}
-                            {activeView === 'payments' && <UnavailableModuleView module="Subscriptions and payments" />}
+                            {activeView === 'reviews' && (
+                                <ReviewsView
+                                    reviews={dashboard.payload.reviews ?? []}
+                                    users={users}
+                                    isLoading={isLoading}
+                                />
+                            )}
+                            {activeView === 'payments' && (
+                                <PaymentsView
+                                    payments={dashboard.payload.payments ?? []}
+                                    users={users}
+                                    isLoading={isLoading}
+                                    feedback={paymentFeedback}
+                                    actionId={paymentActionId}
+                                    onAction={handlePaymentAction}
+                                />
+                            )}
                             {activeView === 'challenges' && (
                                 <ChallengesView
                                     challenges={dashboard.payload.challenges ?? []}
@@ -265,18 +312,18 @@ const DetailField = ({ icon: Icon, label, value, isCopyable }) => (
 
 const AdminHeader = ({ activeView, currentUser, unavailableServices, onMenu, onRefresh, isLoading }) => (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-[#111412]/88 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 items-center gap-3">
                 <button type="button" onClick={onMenu} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-[#c1cf98] lg:hidden" aria-label="Open navigation">
                     <FiMenu size={20} />
                 </button>
-                <div>
+                <div className="min-w-0">
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-[#c1cf98]/70">HeroFit Admin</p>
-                    <h1 className="truncate text-2xl font-black text-[#f5efe7] md:text-3xl">{viewTitles[activeView]}</h1>
+                    <h1 className="max-w-full text-xl font-black leading-tight text-[#f5efe7] sm:text-2xl md:text-3xl xl:max-w-none">{viewTitles[activeView]}</h1>
                 </div>
             </div>
-            <div className="flex items-center gap-3">
-                <button type="button" onClick={onRefresh} className="hidden h-11 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-bold text-white/70 sm:inline-flex">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3 xl:shrink-0 xl:justify-end">
+                <button type="button" onClick={onRefresh} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white/70 sm:px-4">
                     <FiRefreshCw className={isLoading ? 'animate-spin' : ''} /> Refresh
                 </button>
                 <div className="hidden h-11 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm font-bold text-white/70 md:inline-flex">
@@ -450,6 +497,82 @@ const RelationshipsView = ({ relationships, users, isLoading }) => {
     );
 };
 
+const ReviewsView = ({ reviews, users, isLoading }) => {
+    const userMap = new Map(users.map((user) => [String(user.id), user]));
+    const sortedReviews = [...reviews].sort((left, right) => new Date(right.submittedAt ?? 0) - new Date(left.submittedAt ?? 0));
+    const submitted = sortedReviews.filter((review) => review.status === 'SUBMITTED').length;
+    const approved = sortedReviews.filter((review) => review.status === 'APPROVED').length;
+    const rejected = sortedReviews.filter((review) => review.status === 'REJECTED').length;
+
+    return (
+        <div className="space-y-5">
+            <section className="grid gap-4 sm:grid-cols-3">
+                <StatCard label="Awaiting review" value={submitted} icon={FiFlag} note="Submitted logs" isLoading={isLoading} />
+                <StatCard label="Approved" value={approved} icon={FiCheckCircle} note="Coach accepted" isLoading={isLoading} />
+                <StatCard label="Rejected" value={rejected} icon={FiAlertTriangle} note="Needs revision" isLoading={isLoading} />
+            </section>
+
+            <Panel title="Review Queue" eyebrow="Training Service">
+                <div className="space-y-3">
+                    {sortedReviews.length ? sortedReviews.map((review) => (
+                        <ReviewCard
+                            key={review.id}
+                            review={review}
+                            member={userMap.get(String(review.memberId))}
+                            coach={userMap.get(String(review.coachId))}
+                        />
+                    )) : <EmptyState text={isLoading ? 'Loading review logs...' : 'No submitted training logs yet.'} />}
+                </div>
+            </Panel>
+        </div>
+    );
+};
+
+const ReviewCard = ({ review, member, coach }) => (
+    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-black text-[#f5efe7]">Log #{review.id}</p>
+                    <StatusBadge status={review.status} />
+                </div>
+                <p className="mt-2 text-sm text-white/45">
+                    Session #{review.sessionId} submitted {formatDate(review.submittedAt)}
+                </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 md:w-[430px]">
+                <ReviewPerson label="Member" user={member} fallback={`Member #${review.memberId}`} />
+                <ReviewPerson label="Coach" user={coach} fallback={`Coach #${review.coachId}`} />
+            </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <ReviewText label="Member comment" value={review.memberComment} />
+            <ReviewText label="Coach comment" value={review.coachComment} />
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold text-white/40">
+            <span>Points: {review.pointsAwarded ?? '-'}</span>
+            <span>Reviewed: {formatDate(review.reviewedAt)}</span>
+        </div>
+    </article>
+);
+
+const ReviewPerson = ({ label, user, fallback }) => (
+    <div className="min-w-0 rounded-xl border border-white/5 bg-black/10 px-3 py-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30">{label}</p>
+        <p className="mt-1 truncate text-sm font-black text-[#f5efe7]">{user ? getUserDisplayName(user) : fallback}</p>
+        <p className="mt-0.5 truncate text-xs text-white/35">{user?.email ?? 'Profile not loaded'}</p>
+    </div>
+);
+
+const ReviewText = ({ label, value }) => (
+    <div className="rounded-xl border border-white/5 bg-black/10 px-3 py-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30">{label}</p>
+        <p className="mt-2 text-sm leading-relaxed text-white/64">{value || 'No comment provided.'}</p>
+    </div>
+);
+
 const ChallengesView = ({ challenges, isLoading, onCreated }) => (
     <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
         <ChallengeForm onCreated={onCreated} />
@@ -461,6 +584,175 @@ const ChallengesView = ({ challenges, isLoading, onCreated }) => (
             </div>
         </Panel>
     </div>
+);
+
+const PaymentsView = ({ payments, users, isLoading, feedback, actionId, onAction }) => {
+    const sortedPayments = [...payments].sort((left, right) => new Date(right.createdAt ?? 0) - new Date(left.createdAt ?? 0));
+    const userMap = new Map(users.map((user) => [String(user.id), user]));
+    const totals = sortedPayments.reduce((acc, payment) => {
+        acc.count += 1;
+        if (payment.status === 'SUCCESS') acc.success += 1;
+        if (payment.status === 'PENDING') acc.pending += 1;
+        if (payment.status === 'REFUNDED') acc.refunded += 1;
+        return acc;
+    }, { count: 0, success: 0, pending: 0, refunded: 0 });
+
+    return (
+        <div className="space-y-5">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard label="Total payments" value={totals.count} icon={FiCreditCard} note="Payment service" isLoading={isLoading} />
+                <StatCard label="Successful" value={totals.success} icon={FiCheckCircle} note="Completed payments" isLoading={isLoading} />
+                <StatCard label="Pending" value={totals.pending} icon={FiRefreshCw} note="Awaiting action" isLoading={isLoading} />
+                <StatCard label="Refunded" value={totals.refunded} icon={FiActivity} note="Returned payments" isLoading={isLoading} />
+            </section>
+
+            <Panel title="Subscriptions and Payments" eyebrow="Payment Service">
+                {feedback && <div className="mb-4 rounded-2xl border border-[#c1cf98]/25 bg-[#c1cf98]/10 p-4 text-sm font-bold text-[#dfe9bf]">{feedback}</div>}
+                {sortedPayments.length ? (
+                    <>
+                        <div className="grid gap-3 xl:hidden">
+                            {sortedPayments.map((payment) => (
+                                <PaymentCard key={payment.id} payment={payment} member={userMap.get(String(payment.memberId))} actionId={actionId} onAction={onAction} />
+                            ))}
+                        </div>
+                        <PaymentsTable payments={sortedPayments} userMap={userMap} actionId={actionId} onAction={onAction} />
+                    </>
+                ) : <EmptyState text={isLoading ? 'Loading payments...' : 'No payments have been created yet.'} />}
+            </Panel>
+        </div>
+    );
+};
+
+const PaymentsTable = ({ payments, userMap, actionId, onAction }) => (
+    <div className="hidden overflow-x-auto xl:block">
+        <table className="w-full min-w-[1040px] table-fixed border-separate border-spacing-y-2">
+            <thead>
+            <tr>
+                {[
+                    ['Payment', 'w-[90px]'],
+                    ['Member', 'w-[190px]'],
+                    ['Subscription', 'w-[150px]'],
+                    ['Amount', 'w-[140px]'],
+                    ['Method', 'w-[100px]'],
+                    ['Status', 'w-[130px]'],
+                    ['Created', 'w-[125px]'],
+                    ['Actions', 'w-[170px]'],
+                ].map(([column, width]) => (
+                    <th key={column} className={`${width} px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-white/35`}>
+                        {column}
+                    </th>
+                ))}
+            </tr>
+            </thead>
+            <tbody>
+            {payments.map((payment) => (
+                <tr key={payment.id} className="bg-white/[0.04]">
+                    <PaymentTableCell strong>#{payment.id}</PaymentTableCell>
+                    <PaymentTableCell>
+                        <MemberPaymentCell member={userMap.get(String(payment.memberId))} memberId={payment.memberId} />
+                    </PaymentTableCell>
+                    <PaymentTableCell>Subscription #{payment.subscriptionId}</PaymentTableCell>
+                    <PaymentTableCell strong>{formatMoney(payment.amount, payment.currency)}</PaymentTableCell>
+                    <PaymentTableCell>{payment.method}</PaymentTableCell>
+                    <PaymentTableCell><StatusBadge status={payment.status} /></PaymentTableCell>
+                    <PaymentTableCell>{formatDate(payment.createdAt)}</PaymentTableCell>
+                    <PaymentTableCell><PaymentActions payment={payment} actionId={actionId} onAction={onAction} /></PaymentTableCell>
+                </tr>
+            ))}
+            </tbody>
+        </table>
+    </div>
+);
+
+const PaymentTableCell = ({ children, strong }) => (
+    <td className={`border-y border-white/10 px-3 py-3 text-sm first:rounded-l-2xl first:border-l last:rounded-r-2xl last:border-r ${strong ? 'font-black text-[#f5efe7]' : 'text-white/65'}`}>
+        <div className="min-w-0" title={typeof children === 'string' ? children : undefined}>
+            {children}
+        </div>
+    </td>
+);
+
+const PaymentCard = ({ payment, member, actionId, onAction }) => (
+    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-white/35">Payment #{payment.id}</p>
+                <p className="mt-1 truncate text-xl font-black text-[#f5efe7]">
+                    {formatMoney(payment.amount, payment.currency)}
+                </p>
+            </div>
+            <StatusBadge status={payment.status} />
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <PaymentMeta label="Member" value={member ? getUserDisplayName(member) : `Member #${payment.memberId}`} note={`ID #${payment.memberId}`} />
+            <PaymentMeta label="Subscription" value={`#${payment.subscriptionId}`} />
+            <PaymentMeta label="Method" value={payment.method} />
+            <PaymentMeta label="Created" value={formatDate(payment.createdAt)} />
+        </div>
+        <div className="mt-4 border-t border-white/10 pt-4">
+            <PaymentActions payment={payment} actionId={actionId} onAction={onAction} />
+        </div>
+    </article>
+);
+
+const PaymentMeta = ({ label, value, note }) => (
+    <div className="min-w-0 rounded-xl border border-white/5 bg-black/10 px-3 py-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30">{label}</p>
+        <p className="mt-1 truncate text-sm font-bold text-white/70">{value}</p>
+        {note && <p className="mt-0.5 truncate text-xs text-white/35">{note}</p>}
+    </div>
+);
+
+const MemberPaymentCell = ({ member, memberId }) => (
+    <div className="min-w-0">
+        <p className="truncate font-black text-[#f5efe7]">
+            {member ? getUserDisplayName(member) : `Member #${memberId}`}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-white/38">
+            ID #{memberId}{member?.phone ? ` · ${member.phone}` : ''}
+        </p>
+    </div>
+);
+
+const PaymentActions = ({ payment, actionId, onAction }) => {
+    const isPending = payment.status === 'PENDING';
+    const isSuccessful = payment.status === 'SUCCESS';
+
+    return (
+        <div className="grid grid-cols-2 gap-2 xl:flex xl:flex-wrap">
+            {isPending && (
+                <>
+                    <ActionButton disabled={actionId === `${payment.id}-success`} onClick={() => onAction(payment, 'success')}>
+                        Success
+                    </ActionButton>
+                    <ActionButton disabled={actionId === `${payment.id}-failed`} tone="danger" onClick={() => onAction(payment, 'failed')}>
+                        Fail
+                    </ActionButton>
+                </>
+            )}
+            {isSuccessful && (
+                <ActionButton disabled={actionId === `${payment.id}-refund`} tone="danger" onClick={() => onAction(payment, 'refund')}>
+                    Refund
+                </ActionButton>
+            )}
+            {!isPending && !isSuccessful && <span className="text-xs font-bold text-white/35">No actions</span>}
+        </div>
+    );
+};
+
+const ActionButton = ({ children, disabled, onClick, tone = 'default' }) => (
+    <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className={`inline-flex h-10 min-w-[76px] items-center justify-center rounded-xl border px-3 text-xs font-black transition disabled:opacity-50 ${
+            tone === 'danger'
+                ? 'border-red-300/25 bg-red-400/10 text-red-100 hover:bg-red-400/20'
+                : 'border-[#c1cf98]/25 bg-[#c1cf98]/10 text-[#dfe9bf] hover:bg-[#c1cf98]/20'
+        }`}
+    >
+        {disabled ? '...' : children}
+    </button>
 );
 
 const ChallengeForm = ({ onCreated }) => {
@@ -508,23 +800,86 @@ const ChallengeForm = ({ onCreated }) => {
     );
 };
 
-const MonitoringView = ({ services, isLoading }) => (
-    <Panel title="Connected Services" eyebrow="Request Health">
-        <div className="grid gap-3 sm:grid-cols-2">
-            {services.length ? services.map((service) => (
-                <div key={service.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="flex items-center justify-between gap-3">
+const MonitoringView = ({ services, isLoading }) => {
+    const summary = services.reduce((acc, service) => {
+        if (service.status === 'Online') acc.online += 1;
+        else if (service.status === 'Forbidden') acc.restricted += 1;
+        else acc.offline += 1;
+        return acc;
+    }, { online: 0, restricted: 0, offline: 0 });
+
+    const averageLatency = services
+        .filter((service) => Number.isFinite(service.latency))
+        .reduce((acc, service, _, list) => acc + service.latency / list.length, 0);
+
+    return (
+        <div className="space-y-5">
+            <section className="grid gap-4 sm:grid-cols-3">
+                <MonitoringStat label="Online" value={summary.online} tone="online" />
+                <MonitoringStat label="Restricted" value={summary.restricted} tone="restricted" />
+                <MonitoringStat label="Offline" value={summary.offline} tone="offline" />
+            </section>
+
+            <Panel title="Service Health" eyebrow="Monitoring">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <p className="text-sm font-bold text-white/58">
+                        {isLoading ? 'Checking services...' : `${services.length} checks completed`}
+                    </p>
+                    <p className="text-sm font-black text-[#c1cf98]">
+                        Avg latency: {averageLatency ? `${Math.round(averageLatency)} ms` : '-'}
+                    </p>
+                </div>
+
+                <div className="grid gap-3">
+                    {services.length ? services.map((service) => (
+                        <MonitoringServiceRow key={service.id} service={service} />
+                    )) : <EmptyState text={isLoading ? 'Checking services...' : 'No service checks available.'} />}
+                </div>
+            </Panel>
+        </div>
+    );
+};
+
+const MonitoringStat = ({ label, value, tone }) => {
+    const toneClass = {
+        online: 'border-[#c1cf98]/25 bg-[#c1cf98]/10 text-[#dfe9bf]',
+        restricted: 'border-yellow-300/25 bg-yellow-300/10 text-yellow-100',
+        offline: 'border-red-300/25 bg-red-400/10 text-red-100',
+    }[tone];
+
+    return (
+        <div className={`rounded-2xl border px-4 py-4 ${toneClass}`}>
+            <p className="text-xs font-black uppercase tracking-[0.16em] opacity-70">{label}</p>
+            <p className="mt-2 text-3xl font-black">{value}</p>
+        </div>
+    );
+};
+
+const MonitoringServiceRow = ({ service }) => {
+    const detail = service.status === 'Online'
+        ? `${service.latency} ms response`
+        : service.status === 'Forbidden'
+            ? 'Request reached service, but current token has no access'
+            : 'No successful response';
+
+    return (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                         <p className="font-black text-[#f5efe7]">{service.name}</p>
                         <StatusBadge status={service.status} />
                     </div>
-                    <p className="mt-3 text-sm text-white/45">
-                        {service.latency === null ? 'No successful response' : `${service.latency} ms response time`}
-                    </p>
+                    <p className="mt-2 truncate text-xs font-bold text-white/35">{service.endpoint ?? service.url}</p>
                 </div>
-            )) : <EmptyState text={isLoading ? 'Checking services...' : 'No service checks available.'} />}
+                <div className="shrink-0 text-left md:text-right">
+                    <p className="text-sm font-black text-white/70">{detail}</p>
+                    {service.statusCode && <p className="mt-1 text-xs text-white/35">HTTP {service.statusCode}</p>}
+                </div>
+            </div>
         </div>
-    </Panel>
-);
+    );
+};
 
 const UnavailableModuleView = ({ module }) => (
     <Panel title={module} eyebrow="Not Implemented">
@@ -678,6 +1033,11 @@ const EmptyState = ({ text }) => (
 
 const roleLabel = (role) => ({ MEMBER: 'Member', COACH: 'Coach', ADMIN: 'Admin' }[role] ?? role ?? 'Unknown');
 const formatDate = (value) => value ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date(value)) : '-';
+const formatMoney = (amount, currency = 'KZT') => {
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount)) return `${amount ?? '-'} ${currency ?? ''}`.trim();
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: currency || 'KZT' }).format(numericAmount);
+};
 const userNameById = (map, id) => map.has(String(id)) ? getUserDisplayName(map.get(String(id))) : `User #${id}`;
 
 const adminNavItems = [
@@ -695,9 +1055,9 @@ const viewTitles = {
     overview: 'Admin Dashboard',
     users: 'Users Management',
     relationships: 'Relationship Moderation',
-    categories: 'Dynamic Points Config',
+    categories: 'Workout Points',
     reviews: 'Reviews and Reports',
-    payments: 'Subscriptions and Payments',
+    payments: 'Payments',
     challenges: 'Challenges',
     monitoring: 'System Monitoring',
 };

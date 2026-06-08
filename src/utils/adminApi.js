@@ -1,10 +1,12 @@
 import api from './api.js';
 
 const serviceRequests = [
-    { id: 'auth', name: 'Auth Service', url: '/api/admin/users' },
-    { id: 'training', name: 'Training Service', url: '/api/training/admin/overview' },
-    { id: 'relationships', name: 'Mentorship Data', url: '/api/training/admin/relationships' },
-    { id: 'challenges', name: 'Challenge Service', url: '/api/challenges/admin' },
+    { id: 'auth', name: 'Auth Service', url: '/api/admin/users', endpoint: '8080 /api/admin/users' },
+    { id: 'training', name: 'Training Service', url: '/api/training/admin/overview', endpoint: '8081 /api/training/admin/overview' },
+    { id: 'relationships', name: 'Mentorship Data', url: '/api/training/admin/relationships', endpoint: '8081 /api/training/admin/relationships' },
+    { id: 'reviews', name: 'Review Logs', url: '/api/training/admin/reviews', endpoint: '8081 /api/training/admin/reviews' },
+    { id: 'challenges', name: 'Challenge Service', url: '/api/challenges/admin', endpoint: '8083 /api/challenges/admin' },
+    { id: 'payments', name: 'Payment Service', url: 'http://localhost:8085/api/payments/admin', endpoint: '8085 /api/payments/admin' },
 ];
 
 const authConfig = () => ({
@@ -39,6 +41,7 @@ export const fetchAdminDashboard = async () => {
         return {
             ...service,
             status: status === 403 ? 'Forbidden' : 'Unavailable',
+            statusCode: status ?? null,
             latency: null,
         };
     });
@@ -48,6 +51,21 @@ export const fetchAdminDashboard = async () => {
 
 export const createAdminChallenge = (challenge) =>
     api.post('/api/challenges', challenge, authConfig());
+
+export const markPaymentSuccess = (paymentId) =>
+    api.patch(`http://localhost:8085/api/payments/${paymentId}/success`, null, authConfig());
+
+export const markPaymentFailed = (paymentId, reason) =>
+    api.patch(`http://localhost:8085/api/payments/${paymentId}/failed`, null, {
+        ...authConfig(),
+        params: { reason },
+    });
+
+export const refundPayment = (paymentId) =>
+    api.patch(`http://localhost:8085/api/payments/${paymentId}/refund`, null, authConfig());
+
+export const createPayment = (payment) =>
+    api.post('http://localhost:8085/api/payments', payment, authConfig());
 
 const API_BASE = '/api/training/admin';
 

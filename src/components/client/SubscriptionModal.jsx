@@ -1,26 +1,55 @@
 import React from 'react';
 import { PatternFormat } from 'react-number-format';
 import { FiX, FiCheck, FiCreditCard, FiMapPin, FiUser, FiPhone } from 'react-icons/fi';
-import useStore from '../../store/useStore'; // Импортируем стор
+import useStore from '../../store/useStore';
+import { createPayment } from '../../utils/adminApi.js';
 
 const SubscriptionModal = ({ sub, onClose }) => {
     const [paymentMethod, setPaymentMethod] = React.useState('card');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [error, setError] = React.useState('');
     const setSubscription = useStore((state) => state.setSubscription);
+    const currentUser = useStore((state) => state.currentUser);
+
     if (!sub) return null;
 
-    const handlePurchase = (e) => {
+    const handlePurchase = async (e) => {
         e.preventDefault();
+        setError('');
+        setIsSubmitting(true);
 
-        const newSubscription = {
-            subId: sub.id,
-            status: 'active'
-        };
+        try {
+            const memberId = currentUser?.id || localStorage.getItem('userId');
 
-        setSubscription(newSubscription);
+            if (!memberId) {
+                throw new Error('Please log in before buying a membership.');
+            }
 
-        console.log("Store updated with:", newSubscription);
+            const response = await createPayment({
+                subscriptionId: sub.id,
+                memberId: Number(memberId),
+                amount: parsePrice(sub.price),
+                currency: 'KZT',
+                method: paymentMethod === 'office' ? 'CASH' : 'CARD'
+            });
 
-        onClose();
+            const newSubscription = {
+                subId: sub.id,
+                status: response.data?.status === 'SUCCESS' ? 'active' : 'pending',
+                paymentId: response.data?.id ?? null
+            };
+
+            setSubscription(newSubscription);
+
+            console.log('Payment created:', response.data);
+            console.log('Store updated with:', newSubscription);
+
+            onClose();
+        } catch (purchaseError) {
+            setError(purchaseError.response?.data?.message || purchaseError.message || 'Payment could not be created.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -51,7 +80,6 @@ const SubscriptionModal = ({ sub, onClose }) => {
                         <h3 className="text-xl font-bold mb-6 tracking-tight text-[#c1cf98]">Checkout</h3>
 
                         <form className="space-y-5" onSubmit={handlePurchase}>
-                            {/* Инпуты (те же, что у тебя были) */}
                             <div className="relative">
                                 <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
                                 <input required type="text" placeholder="full name" className="w-full bg-white/5 border border-transparent focus:border-[#c1cf98]/50 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all text-sm placeholder:text-white/20" />
@@ -62,7 +90,6 @@ const SubscriptionModal = ({ sub, onClose }) => {
                                 <PatternFormat format="+7 (###) ### ## ##" allowEmptyFormatting={false} mask="_" placeholder="phone number" className="w-full bg-white/5 border border-transparent focus:border-[#c1cf98]/50 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all text-sm text-white placeholder:text-white/20" required />
                             </div>
 
-                            {/* Переключатель оплаты */}
                             <div className="flex bg-white/5 rounded-2xl p-1 border border-white/5 gap-1">
                                 <button type="button" onClick={() => setPaymentMethod('card')} className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all font-medium text-xs ${paymentMethod === 'card' ? 'bg-[#c1cf98] text-black shadow-lg shadow-[#c1cf98]/10' : 'text-white/40 hover:text-white'}`}>
                                     <FiCreditCard size={14}/> Card
@@ -78,9 +105,15 @@ const SubscriptionModal = ({ sub, onClose }) => {
                                 </div>
                             )}
 
+                            {error && (
+                                <div className="rounded-2xl border border-red-300/25 bg-red-400/10 px-4 py-3 text-xs font-bold text-red-100">
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="pt-4">
-                                <button type="submit" className="w-full bg-transparent border border-[#c1cf98] text-[#c1cf98] font-bold py-4 rounded-2xl hover:bg-[#c1cf98] hover:text-black transition-all duration-300 transform active:scale-[0.98] tracking-tight">
-                                    Buy membership — {sub.price}
+                                <button type="submit" disabled={isSubmitting} className="w-full bg-transparent border border-[#c1cf98] text-[#c1cf98] font-bold py-4 rounded-2xl hover:bg-[#c1cf98] hover:text-black transition-all duration-300 transform active:scale-[0.98] tracking-tight disabled:opacity-60 disabled:hover:bg-transparent disabled:hover:text-[#c1cf98]">
+                                    {isSubmitting ? 'Creating payment...' : `Buy membership - ${sub.price}`}
                                 </button>
                             </div>
                         </form>
@@ -90,5 +123,7 @@ const SubscriptionModal = ({ sub, onClose }) => {
         </div>
     );
 };
+
+const parsePrice = (price) => Number(String(price).replace(/[^\d]/g, ''));
 
 export default SubscriptionModal;

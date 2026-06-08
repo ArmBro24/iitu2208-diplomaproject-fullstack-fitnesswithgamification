@@ -611,6 +611,7 @@ const useStore = create((set, get) => ({
         }
     },
     setCoachContract: (contract) => set({ coachContract: contract }),
+    setSubscription: (subscription) => set({ subscription }),
     setSelectedTrainer: (trainer) => set({ selectedTrainer: trainer }),
     setSelectedTraining: (training) => set({ selectedTraining: training })
 }));
