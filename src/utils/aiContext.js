@@ -1,5 +1,6 @@
 const TRAINER_STORAGE_KEY = 'herofit-trainer-dashboard';
-const AI_PROFILE_STORAGE_KEY = 'herofit-ai-profile';
+export const AI_PROFILE_STORAGE_PREFIX = 'herofit-ai-profile';
+const LEGACY_AI_PROFILE_STORAGE_KEY = AI_PROFILE_STORAGE_PREFIX;
 const PROFILE_REFRESH_DAYS = 14;
 
 const readStoredTrainerState = () => {
@@ -50,6 +51,8 @@ const compactProfile = (profile = {}) => ({
     nextWorkout: profile.nextWorkout,
     lastUpdatedAt: profile.lastUpdatedAt,
     weightUpdatedAt: profile.weightUpdatedAt,
+    goalUpdatedAt: profile.goalUpdatedAt,
+    checkInUpdatedAt: profile.checkInUpdatedAt,
 });
 
 const removeEmptyValues = (value = {}) =>
@@ -63,33 +66,64 @@ const hasSavedAIProfileData = (profile = {}) =>
         return value !== undefined && value !== null && String(value).trim() !== '';
     });
 
-export const loadAIProfileMemory = () => {
+export const getAIProfileMemoryKey = (owner = {}) => {
+    if (typeof window === 'undefined') return `${AI_PROFILE_STORAGE_PREFIX}:guest`;
+
+    const id = owner?.id ?? owner?.userId ?? owner?.memberId ?? window.localStorage.getItem('userId') ?? 'guest';
+    const role = owner?.role ?? window.localStorage.getItem('activeRole') ?? 'member';
+
+    return `${AI_PROFILE_STORAGE_PREFIX}:${String(role).toLowerCase()}:${id}`;
+};
+
+export const loadAIProfileMemory = (owner) => {
     if (typeof window === 'undefined') return null;
 
     try {
-        const raw = window.localStorage.getItem(AI_PROFILE_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
+        const raw = window.localStorage.getItem(getAIProfileMemoryKey(owner));
+        if (raw) return JSON.parse(raw);
+
+        const legacyRaw = window.localStorage.getItem(LEGACY_AI_PROFILE_STORAGE_KEY);
+        if (!owner?.id && legacyRaw) return JSON.parse(legacyRaw);
+
+        return null;
     } catch {
         return null;
     }
 };
 
-export const saveAIProfileMemory = (profile = {}) => {
+export const getSavedAIProfileMemories = () => {
+    if (typeof window === 'undefined') return [];
+
+    try {
+        return Object.keys(window.localStorage)
+            .filter((key) => key === LEGACY_AI_PROFILE_STORAGE_KEY || key.startsWith(`${AI_PROFILE_STORAGE_PREFIX}:`))
+            .map((key) => [key, window.localStorage.getItem(key)])
+            .filter(([, value]) => value);
+    } catch {
+        return [];
+    }
+};
+
+export const saveAIProfileMemory = (profile = {}, owner) => {
     if (typeof window === 'undefined') return null;
 
-    const current = loadAIProfileMemory() ?? {};
+    const current = loadAIProfileMemory(owner) ?? {};
     const now = new Date().toISOString();
+    const hasWeight = profile.weight !== undefined && profile.weight !== '';
+    const hasGoal = profile.fitnessGoal !== undefined && profile.fitnessGoal !== '';
     const nextProfile = removeEmptyValues({
         ...current,
         ...profile,
+        ownerId: owner?.id ?? current.ownerId,
+        ownerRole: owner?.role ?? current.ownerRole,
         setupCompletedAt: current.setupCompletedAt ?? now,
         lastUpdatedAt: now,
-        weightUpdatedAt: profile.weight !== undefined && profile.weight !== ''
-            ? now
-            : current.weightUpdatedAt,
+        weightUpdatedAt: hasWeight ? now : current.weightUpdatedAt,
+        goalUpdatedAt: hasGoal ? now : current.goalUpdatedAt,
+        checkInUpdatedAt: hasWeight || hasGoal ? now : current.checkInUpdatedAt,
     });
 
-    window.localStorage.setItem(AI_PROFILE_STORAGE_KEY, JSON.stringify(nextProfile));
+    window.localStorage.setItem(getAIProfileMemoryKey(owner), JSON.stringify(nextProfile));
     return nextProfile;
 };
 
@@ -97,13 +131,52 @@ export const isAIProfileSetupComplete = (profile = loadAIProfileMemory()) =>
     Boolean(profile?.setupCompletedAt && hasSavedAIProfileData(profile));
 
 export const isAIProfileRefreshDue = (profile = loadAIProfileMemory()) => {
-    if (!isAIProfileSetupComplete(profile) || !profile?.weightUpdatedAt) return false;
+    if (!isAIProfileSetupComplete(profile)) return false;
 
-    const lastWeightUpdate = new Date(profile.weightUpdatedAt);
-    if (Number.isNaN(lastWeightUpdate.getTime())) return true;
+    const lastCheckIn = new Date(profile.checkInUpdatedAt ?? profile.weightUpdatedAt ?? profile.goalUpdatedAt);
+    if (Number.isNaN(lastCheckIn.getTime())) return true;
 
-    const diffDays = (Date.now() - lastWeightUpdate.getTime()) / (24 * 60 * 60 * 1000);
+    const diffDays = (Date.now() - lastCheckIn.getTime()) / (24 * 60 * 60 * 1000);
     return diffDays >= PROFILE_REFRESH_DAYS;
+};
+
+export const migrateLegacyAIProfileMemory = (owner) => {
+    if (typeof window === 'undefined' || !owner?.id) return null;
+
+    const key = getAIProfileMemoryKey(owner);
+
+    try {
+        if (window.localStorage.getItem(key)) return loadAIProfileMemory(owner);
+
+        const legacyRaw = window.localStorage.getItem(LEGACY_AI_PROFILE_STORAGE_KEY);
+        if (!legacyRaw) return null;
+
+        const legacyProfile = JSON.parse(legacyRaw);
+        window.localStorage.setItem(key, JSON.stringify({
+            ...legacyProfile,
+            ownerId: owner.id,
+            ownerRole: owner.role,
+        }));
+
+        return loadAIProfileMemory(owner);
+    } catch {
+        return null;
+    }
+};
+
+/*
+ * Kept as a tiny compatibility wrapper for old call sites. New code should pass
+ * the profile owner, so AI memory stays isolated per member/coach/client.
+ */
+export const loadLegacyAIProfileMemory = () => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const raw = window.localStorage.getItem(LEGACY_AI_PROFILE_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
 };
 
 const compactSession = (session = {}) => ({
@@ -142,9 +215,12 @@ export const collectHeroFitAIContext = ({
         ...(Array.isArray(storedTrainerState.scheduleItems) ? storedTrainerState.scheduleItems : []),
     ];
 
-    const rememberedProfile = aiProfileMemory ?? loadAIProfileMemory();
+    const rememberedProfile = aiProfileMemory ?? loadAIProfileMemory(selectedClient ?? currentUser);
     const profileSource = selectedClient
-        ? selectedClient
+        ? {
+            ...selectedClient,
+            ...(rememberedProfile ?? {}),
+        }
         : {
             ...(currentUser ?? {}),
             ...(rememberedProfile ?? {}),
@@ -153,10 +229,7 @@ export const collectHeroFitAIContext = ({
     return {
         userProfile: compactProfile(profileSource),
         currentAppUser: selectedClient
-            ? compactProfile({
-                ...(currentUser ?? {}),
-                ...(rememberedProfile ?? {}),
-            })
+            ? compactProfile(currentUser ?? {})
             : undefined,
         profileMemory: rememberedProfile ? compactProfile(rememberedProfile) : undefined,
         recentWorkoutHistory: {

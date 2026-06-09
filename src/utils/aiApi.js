@@ -5,10 +5,12 @@ const keepChatHistory = (messages) =>
         .map(({ role, content }) => ({ role, content }));
 
 const postJson = async (url, payload) => {
+    const token = window.localStorage.getItem('token');
     const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
     });

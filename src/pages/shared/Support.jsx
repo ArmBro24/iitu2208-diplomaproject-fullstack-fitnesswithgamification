@@ -62,14 +62,15 @@ const Support = () => {
                         onClose={closeSidebar}
                         onOpen={() => setIsSidebarOpen(true)}
                         onLogout={() => navigateFromSidebar('/login')}
+                        triggerMode="page"
                     />
                 )}
 
-                <nav className={`relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'md:pl-24' : ''}`}>
+                <nav className={`pointer-events-none relative z-30 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'pl-20 md:pl-24' : ''}`}>
                     <button
                         onClick={() => navigate(backPath, backState ? { state: backState } : undefined)}
                         aria-label="Back"
-                        className="rounded-xl border border-white/10 bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 active:scale-95 md:rounded-2xl md:p-3 md:text-3xl"
+                        className="pointer-events-auto rounded-xl border border-white/10 bg-white/15 p-2 text-2xl transition-all hover:bg-white/25 active:scale-95 md:rounded-2xl md:p-3 md:text-3xl"
                     >
                         <FiArrowLeft className="text-yellow-100/80"/>
                     </button>

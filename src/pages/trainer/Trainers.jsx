@@ -13,7 +13,6 @@ import { createTrainerNavItems } from '../../components/trainer/trainerNavigatio
 import AIChat from '../../components/ai/AIChat.jsx';
 import {
     grainGradient,
-    initialClients,
     noiseStyle
 } from '../../components/trainer/trainerData.js';
 import { setActiveRole } from '../../utils/roleRouting.js';
@@ -40,21 +39,16 @@ const Trainers = ({ onLogout }) => {
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
     const [clientsSubView, setClientsSubView] = useState(() => readStoredState().clientsSubView ?? 'list');
 
-    const [localClients, setLocalClients] = useState(() => readStoredState().clients ?? initialClients);
-
     const clients = useMemo(() => {
-        return (storeClients && storeClients.length > 0) ? storeClients : localClients;
-    }, [storeClients, localClients]);
+        return Array.isArray(storeClients) ? storeClients : [];
+    }, [storeClients]);
 
-    const setClients = React.useCallback((val) => {
-        setLocalClients(val);
-    }, []);
     const [assignedWorkouts, setAssignedWorkouts] = useState([]);
     const [scheduleItems, setScheduleItems] = useState([]);
-    const [selectedClientId, setSelectedClientId] = useState(() => readStoredState().selectedClientId ?? initialClients[0].id);
+    const [selectedClientId, setSelectedClientId] = useState(() => readStoredState().selectedClientId ?? null);
 
     const selectedClient = useMemo(
-        () => clients.find((client) => client.id === selectedClientId) ?? clients[0],
+        () => clients.find((client) => String(client.id) === String(selectedClientId)) ?? clients[0],
         [clients, selectedClientId]
     );
 
@@ -109,6 +103,20 @@ const Trainers = ({ onLogout }) => {
     }, [selectedClientId, fetchSessions]);
 
     useEffect(() => {
+        if (!clients.length) {
+            if (selectedClientId !== null) {
+                setSelectedClientId(null);
+            }
+            return;
+        }
+
+        const hasSelectedClient = clients.some((client) => String(client.id) === String(selectedClientId));
+        if (!hasSelectedClient) {
+            setSelectedClientId(clients[0].id);
+        }
+    }, [clients, selectedClientId]);
+
+    useEffect(() => {
         const clientIds = (storeClients ?? []).map((client) => client.id).filter(Boolean);
         fetchTrainerSchedule(clientIds, currentCoachId);
     }, [storeClients, currentCoachId, fetchTrainerSchedule]);
@@ -138,14 +146,6 @@ const Trainers = ({ onLogout }) => {
         try {
             const createdSession = await createTraining(data);
             const scheduleItem = mapTrainingSessionToScheduleItem(createdSession ?? data, clients);
-
-            setClients((currentClients) =>
-                currentClients.map((item) =>
-                    item.id === data.memberId
-                        ? { ...item, nextWorkout: data.title, status: 'On track' }
-                        : item
-                )
-            );
 
             setScheduleItems((current) => upsertById(current, scheduleItem));
             setAssignedWorkouts((current) => upsertById(current, scheduleItem));
@@ -181,33 +181,14 @@ const Trainers = ({ onLogout }) => {
         );
     };
 
-    const handleRequestProgressUpdate = (clientId) => {
-        const timestamp = formatRequestTimestamp();
-
-        setClients((currentClients) =>
-            currentClients.map((item) =>
-                item.id === clientId
-                    ? {
-                        ...item,
-                        status: 'Update requested',
-                        progressRequestPending: true,
-                        lastProgressRequest: timestamp,
-                        note: 'Progress update requested. Waiting for the client to upload the latest workout results.',
-                        activity: [
-                            { title: 'Progress update requested', subtitle: timestamp },
-                            ...(item.activity ?? []),
-                        ].slice(0, 5),
-                    }
-                    : item
-            )
-        );
+    const handleRequestProgressUpdate = () => {
+        alert('Progress request needs a backend endpoint before it can update live client data.');
     };
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
         const payload = {
-            clients,
             assignedWorkouts,
             scheduleItems,
             selectedClientId,
@@ -215,7 +196,7 @@ const Trainers = ({ onLogout }) => {
         };
 
         window.localStorage.setItem(TRAINER_STORAGE_KEY, JSON.stringify(payload));
-    }, [assignedWorkouts, clients, clientsSubView, scheduleItems, selectedClientId]);
+    }, [assignedWorkouts, clientsSubView, scheduleItems, selectedClientId]);
 
     const openClientsList = () => {
         setClientsSubView('list');
@@ -268,15 +249,16 @@ const Trainers = ({ onLogout }) => {
                     <div className="absolute inset-0 opacity-45 mix-blend-soft-light" style={noiseStyle} />
 
                     <div className="relative z-10 mx-auto h-full max-w-[1260px]">
-                        <TrainerDrawer
-                            isOpen={isSidebarOpen}
-                            items={trainerNavItems}
-                            onClose={closeSidebar}
-                            onOpen={() => setIsSidebarOpen(true)}
-                            onLogout={() => handleSidebarNavigation(onLogout)}
-                        />
+                        <main className="relative h-full w-full overflow-y-auto overflow-x-hidden">
+                            <TrainerDrawer
+                                isOpen={isSidebarOpen}
+                                items={trainerNavItems}
+                                onClose={closeSidebar}
+                                onOpen={() => setIsSidebarOpen(true)}
+                                onLogout={() => handleSidebarNavigation(onLogout)}
+                                triggerMode="page"
+                            />
 
-                        <main className="h-full w-full overflow-y-auto overflow-x-hidden">
                             {view === 'dashboard' && (
                                 <TrainerHomeView
                                     onOpenClients={openClientsList}
@@ -319,7 +301,16 @@ const Trainers = ({ onLogout }) => {
                                 />
                             )}
 
-                            {view === 'clients' && clientsSubView === 'details' && (
+                            {view === 'clients' && clientsSubView !== 'list' && !selectedClient && (
+                                <TrainerClientsView
+                                    onBack={() => setView('dashboard')}
+                                    onOpenDetails={openClientDetails}
+                                    clients={clients}
+                                    setSelectedClientId={setSelectedClientId}
+                                />
+                            )}
+
+                            {view === 'clients' && clientsSubView === 'details' && selectedClient && (
                                 <TrainerClientDetailsView
                                     onBack={openClientsList}
                                     onOpenProfile={() => setView('profile')}
@@ -331,7 +322,7 @@ const Trainers = ({ onLogout }) => {
                                 />
                             )}
 
-                            {view === 'clients' && clientsSubView === 'assign' && (
+                            {view === 'clients' && clientsSubView === 'assign' && selectedClient && (
                                 <TrainerAssignWorkoutView
                                     onBack={openClientDetails}
                                     onOpenProfile={() => setView('profile')}
@@ -373,13 +364,6 @@ const readStoredState = () => {
         return {};
     }
 };
-
-const formatRequestTimestamp = () =>
-    new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date());
 
 const upsertById = (items, nextItem) => {
     const exists = items.some((item) => item.id === nextItem.id);

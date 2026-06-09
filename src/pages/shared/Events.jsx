@@ -56,10 +56,11 @@ const Events = () => {
                         onClose={closeSidebar}
                         onOpen={() => setIsSidebarOpen(true)}
                         onLogout={() => navigateFromSidebar('/login')}
+                        triggerMode="page"
                     />
                 )}
 
-                <nav className={`relative z-20 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'md:pl-24' : ''}`}>
+                <nav className={`relative z-20 flex items-center px-6 py-6 md:px-10 md:py-8 ${isTrainerMode ? 'pl-20 md:pl-24' : ''}`}>
                     <button
                         onClick={() => navigate(backPath, backState ? { state: backState } : undefined)}
                         aria-label="Back"

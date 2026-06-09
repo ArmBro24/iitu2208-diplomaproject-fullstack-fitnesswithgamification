@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FiSend, FiX } from 'react-icons/fi';
 import { sendAIChat } from '../../utils/aiApi.js';
 import {
@@ -6,14 +6,17 @@ import {
     isAIProfileRefreshDue,
     isAIProfileSetupComplete,
     loadAIProfileMemory,
+    migrateLegacyAIProfileMemory,
     saveAIProfileMemory,
 } from '../../utils/aiContext.js';
 import useStore from '../../store/useStore.js';
 
-const initialMessages = [
+const getInitialMessages = (needsProfileSetup) => [
     {
         role: 'assistant',
-        content: 'Hi. Ask me about workouts, recovery, or nutrition. I will keep it short and practical.',
+        content: needsProfileSetup
+            ? 'Привет. Чтобы давать точные советы, сначала запомню твои базовые параметры: рост, вес, цель, уровень и ограничения по здоровью.'
+            : 'Hi. Ask me about workouts, recovery, or nutrition. I will keep it short and practical.',
     },
 ];
 
@@ -27,18 +30,45 @@ const emptyProfileForm = {
 
 const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) => {
     const { currentUser, userStats, challenges, sessions } = useStore();
-    const [messages, setMessages] = useState(initialMessages);
+    const profileOwner = useMemo(
+        () => selectedClient
+            ? { ...selectedClient, role: selectedClient.role ?? 'client' }
+            : currentUser,
+        [currentUser?.id, currentUser?.role, selectedClient?.id, selectedClient?.role]
+    );
+    const initialProfileMemory = loadAIProfileMemory(profileOwner);
+    const needsProfileSetup = !isAIProfileSetupComplete(initialProfileMemory);
+    const [messages, setMessages] = useState(() => getInitialMessages(needsProfileSetup));
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [aiProfileMemory, setAIProfileMemory] = useState(() => loadAIProfileMemory());
+    const [aiProfileMemory, setAIProfileMemory] = useState(() => initialProfileMemory);
     const [profileForm, setProfileForm] = useState(() => ({
         ...emptyProfileForm,
-        ...(loadAIProfileMemory() ?? {}),
+        ...(initialProfileMemory ?? {}),
     }));
-    const [showProfileSetup, setShowProfileSetup] = useState(() => !isAIProfileSetupComplete() && !selectedClient);
-    const [showRefreshPrompt, setShowRefreshPrompt] = useState(() => isAIProfileRefreshDue() && !selectedClient);
-    const [refreshWeight, setRefreshWeight] = useState(() => loadAIProfileMemory()?.weight ?? '');
+    const [showProfileSetup, setShowProfileSetup] = useState(() => needsProfileSetup);
+    const [showRefreshPrompt, setShowRefreshPrompt] = useState(() => isAIProfileRefreshDue(initialProfileMemory));
+    const [refreshForm, setRefreshForm] = useState(() => ({
+        weight: initialProfileMemory?.weight ?? '',
+        fitnessGoal: initialProfileMemory?.fitnessGoal ?? '',
+    }));
     const bottomRef = useRef(null);
+
+    useEffect(() => {
+        const migratedProfile = migrateLegacyAIProfileMemory(profileOwner);
+        const nextProfile = migratedProfile ?? loadAIProfileMemory(profileOwner);
+        const nextNeedsSetup = !isAIProfileSetupComplete(nextProfile);
+
+        setAIProfileMemory(nextProfile);
+        setProfileForm({ ...emptyProfileForm, ...(nextProfile ?? {}) });
+        setRefreshForm({
+            weight: nextProfile?.weight ?? '',
+            fitnessGoal: nextProfile?.fitnessGoal ?? '',
+        });
+        setShowProfileSetup(nextNeedsSetup);
+        setShowRefreshPrompt(!nextNeedsSetup && isAIProfileRefreshDue(nextProfile));
+        setMessages(getInitialMessages(nextNeedsSetup));
+    }, [profileOwner]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,19 +83,36 @@ const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) =>
 
     const handleSaveProfile = (event) => {
         event.preventDefault();
-        const savedProfile = saveAIProfileMemory(profileForm);
+        const savedProfile = saveAIProfileMemory(profileForm, profileOwner);
         setAIProfileMemory(savedProfile);
         setProfileForm({ ...emptyProfileForm, ...savedProfile });
-        setRefreshWeight(savedProfile?.weight ?? '');
+        setRefreshForm({
+            weight: savedProfile?.weight ?? '',
+            fitnessGoal: savedProfile?.fitnessGoal ?? '',
+        });
         setShowProfileSetup(false);
         setShowRefreshPrompt(false);
+        setMessages((current) => [
+            ...current,
+            {
+                role: 'assistant',
+                content: 'Готово, я запомнил профиль. Теперь можешь спрашивать про тренировки, питание, восстановление или план под твою цель.',
+            },
+        ]);
     };
 
     const handleSaveWeightRefresh = () => {
-        const savedProfile = saveAIProfileMemory({ weight: refreshWeight });
+        const savedProfile = saveAIProfileMemory(refreshForm, profileOwner);
         setAIProfileMemory(savedProfile);
         setProfileForm({ ...emptyProfileForm, ...savedProfile });
         setShowRefreshPrompt(false);
+    };
+
+    const updateRefreshField = (field, value) => {
+        setRefreshForm((current) => ({
+            ...current,
+            [field]: value,
+        }));
     };
 
     const handleSkipProfileSetup = () => {
@@ -126,6 +173,23 @@ const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) =>
                 </header>
 
                 <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                    {messages.map((message, index) => (
+                        <div
+                            key={`${message.role}-${index}`}
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div
+                                className={`max-w-[92%] overflow-hidden rounded-[20px] px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                                    message.role === 'user'
+                                        ? 'bg-[#c1cf98] text-[#141712] sm:max-w-[78%]'
+                                        : 'border border-white/10 bg-white/[0.06] text-[#f3e8dc]'
+                                }`}
+                            >
+                                <MessageContent content={message.content} />
+                            </div>
+                        </div>
+                    ))}
+
                     {showProfileSetup && (
                         <ProfileSetupForm
                             profileForm={profileForm}
@@ -137,29 +201,12 @@ const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) =>
 
                     {!showProfileSetup && showRefreshPrompt && (
                         <WeightRefreshPrompt
-                            weight={refreshWeight}
-                            onChange={setRefreshWeight}
+                            form={refreshForm}
+                            onChange={updateRefreshField}
                             onSave={handleSaveWeightRefresh}
                             onDismiss={() => setShowRefreshPrompt(false)}
                         />
                     )}
-
-                    {messages.map((message, index) => (
-                        <div
-                            key={`${message.role}-${index}`}
-                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <p
-                                className={`max-w-[82%] whitespace-pre-line rounded-[20px] px-4 py-3 text-sm leading-relaxed ${
-                                    message.role === 'user'
-                                        ? 'bg-[#c1cf98] text-[#141712]'
-                                        : 'border border-white/10 bg-white/[0.06] text-[#f3e8dc]'
-                                }`}
-                            >
-                                {message.content}
-                            </p>
-                        </div>
-                    ))}
 
                     {isLoading && (
                         <div className="flex justify-start">
@@ -192,11 +239,57 @@ const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) =>
     );
 };
 
+const MessageContent = ({ content = '' }) => {
+    const lines = content.split('\n');
+
+    return (
+        <div className="space-y-2 break-words text-[15px] leading-7">
+            {lines.map((line, index) => {
+                const trimmed = line.trim();
+
+                if (!trimmed) {
+                    return <div key={`space-${index}`} className="h-1" />;
+                }
+
+                const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+                const numberedMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+
+                if (bulletMatch || numberedMatch) {
+                    return (
+                        <div key={index} className="flex gap-2">
+                            <span className="mt-[0.72em] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
+                            <span>{renderInlineMarkdown((bulletMatch ?? numberedMatch)[1])}</span>
+                        </div>
+                    );
+                }
+
+                return <p key={index}>{renderInlineMarkdown(trimmed)}</p>;
+            })}
+        </div>
+    );
+};
+
+const renderInlineMarkdown = (text) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+    return parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return (
+                <strong key={index} className="font-bold text-inherit">
+                    {part.slice(2, -2)}
+                </strong>
+            );
+        }
+
+        return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+};
+
 const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
-    <form onSubmit={onSave} className="rounded-[24px] border border-[#c1cf98]/20 bg-[#c1cf98]/[0.06] p-4">
-        <p className="text-sm font-bold text-[#f5efe7]">Personalize your AI coach</p>
-        <p className="mt-1 text-xs leading-relaxed text-white/50">
-            Add your basic parameters once, and HeroFit will remember them for future recommendations.
+    <form onSubmit={onSave} className="rounded-[22px] border border-[#c1cf98]/25 bg-[#c1cf98]/[0.07] p-4">
+        <p className="text-sm font-bold text-[#f5efe7]">Профиль для AI coach</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/55">
+            Эти данные сохранятся локально и будут подставляться в следующие рекомендации.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -219,19 +312,19 @@ const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
                 label="Goal"
                 value={profileForm.fitnessGoal}
                 onChange={(value) => onChange('fitnessGoal', value)}
-                placeholder="strength, weight loss, endurance..."
+                placeholder="похудение, сила, выносливость..."
             />
             <ProfileInput
-                label="Training level"
+                label="Level"
                 value={profileForm.trainingLevel}
                 onChange={(value) => onChange('trainingLevel', value)}
                 placeholder="beginner, intermediate..."
             />
             <ProfileInput
-                label="Limitations or injuries"
+                label="Limitations"
                 value={profileForm.limitations}
                 onChange={(value) => onChange('limitations', value)}
-                placeholder="optional"
+                placeholder="травмы, ограничения, нет"
             />
         </div>
 
@@ -240,7 +333,7 @@ const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
                 type="submit"
                 className="flex-1 rounded-full border border-[#c1cf98]/30 bg-[#c1cf98]/15 px-4 py-2 text-sm font-semibold text-[#eaf2cf] transition-all hover:bg-[#c1cf98]/25"
             >
-                Save profile
+                Save
             </button>
             <button
                 type="button"
@@ -253,18 +346,24 @@ const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
     </form>
 );
 
-const WeightRefreshPrompt = ({ weight, onChange, onSave, onDismiss }) => (
+const WeightRefreshPrompt = ({ form, onChange, onSave, onDismiss }) => (
     <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
         <p className="text-sm font-bold text-[#f5efe7]">Quick profile update</p>
         <p className="mt-1 text-xs leading-relaxed text-white/50">
-            It has been about two weeks since your last weight update.
+            It has been about two weeks. Refresh your current weight and goal so advice stays personal.
         </p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-[0.7fr_1fr_auto_auto]">
             <input
-                value={weight}
-                onChange={(event) => onChange(event.target.value)}
+                value={form.weight}
+                onChange={(event) => onChange('weight', event.target.value)}
                 type="number"
                 placeholder="Weight kg"
+                className="min-w-0 flex-1 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#c1cf98]/50"
+            />
+            <input
+                value={form.fitnessGoal}
+                onChange={(event) => onChange('fitnessGoal', event.target.value)}
+                placeholder="Current goal"
                 className="min-w-0 flex-1 rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#c1cf98]/50"
             />
             <button

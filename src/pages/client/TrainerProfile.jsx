@@ -84,10 +84,10 @@ const TrainerProfile = () => {
         }
     };
 
-    const handlePaymentSuccess = () => {
+    const handlePaymentSuccess = async () => {
         if (currentUser && currentUser.id) {
-            assignCoachToClient(currentUser.id, trainer.id);
-            console.log("Assigning coach for user:", currentUser.id);
+            await assignCoachToClient(currentUser.id, trainer.id);
+            console.log("Assigned coach for user:", currentUser.id);
         } else {
             console.error("User ID not found. Please log in again.");
             alert("Ошибка: данные пользователя не найдены. Пожалуйста, перезайдите в систему.");

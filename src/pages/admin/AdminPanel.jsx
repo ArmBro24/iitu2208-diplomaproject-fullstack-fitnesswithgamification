@@ -756,7 +756,7 @@ const ActionButton = ({ children, disabled, onClick, tone = 'default' }) => (
 );
 
 const ChallengeForm = ({ onCreated }) => {
-    const [form, setForm] = useState({ title: '', description: '', targetPoints: 100, startsAt: '', endsAt: '' });
+    const [form, setForm] = useState({ title: '', description: '', targetPoints: 100, rewardPoints: 50, startsAt: '', endsAt: '' });
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -768,11 +768,12 @@ const ChallengeForm = ({ onCreated }) => {
             await createAdminChallenge({
                 ...form,
                 targetPoints: Number(form.targetPoints),
+                rewardPoints: Number(form.rewardPoints),
                 startsAt: new Date(form.startsAt).toISOString(),
                 endsAt: new Date(form.endsAt).toISOString(),
             });
             setFeedback('Challenge published to users.');
-            setForm({ title: '', description: '', targetPoints: 100, startsAt: '', endsAt: '' });
+            setForm({ title: '', description: '', targetPoints: 100, rewardPoints: 50, startsAt: '', endsAt: '' });
             await onCreated();
         } catch (error) {
             setFeedback(error.response?.data?.message || 'Challenge could not be created.');
@@ -786,7 +787,10 @@ const ChallengeForm = ({ onCreated }) => {
             <form className="space-y-3" onSubmit={submit}>
                 <FormInput label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
                 <FormInput label="Description" value={form.description} onChange={(value) => setForm({ ...form, description: value })} />
-                <FormInput label="Target points" type="number" value={form.targetPoints} onChange={(value) => setForm({ ...form, targetPoints: value })} required />
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <FormInput label="Target points" type="number" value={form.targetPoints} onChange={(value) => setForm({ ...form, targetPoints: value })} required />
+                    <FormInput label="Reward points" type="number" value={form.rewardPoints} onChange={(value) => setForm({ ...form, rewardPoints: value })} required />
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                     <FormInput label="Starts" type="datetime-local" value={form.startsAt} onChange={(value) => setForm({ ...form, startsAt: value })} required />
                     <FormInput label="Ends" type="datetime-local" value={form.endsAt} onChange={(value) => setForm({ ...form, endsAt: value })} required />

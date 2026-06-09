@@ -7,6 +7,7 @@ import tr3 from '../assets/trainers/trainer3.jpg';
 import tr4 from '../assets/trainers/trainer4.jpg';
 import tr5 from '../assets/trainers/trainer5.jpg';
 import { getUserDisplayName, getUserNickname } from '../utils/userDisplay.js';
+import { AI_PROFILE_STORAGE_PREFIX, getSavedAIProfileMemories } from '../utils/aiContext.js';
 
 const trainerImages = {
     1: tr1, 2: tr2, 3: tr3, 4: tr4, 5: tr5
@@ -16,7 +17,6 @@ const API_AUTH_URL = 'http://localhost:8080/api/users';
 const API_BASE_URL = 'http://localhost:8081/api/training';
 const API_MENTORSHIP_URL = 'http://localhost:8081/api/training/mentorship';
 const API_CHALLENGES_URL = '/api/challenges';
-const AI_PROFILE_STORAGE_KEY = 'herofit-ai-profile';
 
 const challengeColors = ['bg-red-900/40', 'bg-yellow-800/40', 'bg-blue-900/40', 'bg-green-900/40', 'bg-cyan-900/40'];
 
@@ -135,13 +135,15 @@ const useStore = create((set, get) => ({
     },
 
     logout: () => {
-        const aiProfileMemory = localStorage.getItem(AI_PROFILE_STORAGE_KEY);
+        const aiProfileMemories = getSavedAIProfileMemories();
 
         localStorage.clear();
 
-        if (aiProfileMemory) {
-            localStorage.setItem(AI_PROFILE_STORAGE_KEY, aiProfileMemory);
-        }
+        aiProfileMemories.forEach(([key, value]) => {
+            if (key === AI_PROFILE_STORAGE_PREFIX || key.startsWith(`${AI_PROFILE_STORAGE_PREFIX}:`)) {
+                localStorage.setItem(key, value);
+            }
+        });
 
         set({
             currentUser: { id: null, role: null, email: null },
@@ -248,7 +250,7 @@ const useStore = create((set, get) => ({
                 const mentResponse = await axios.get(`${API_MENTORSHIP_URL}/client/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (mentResponse.data) {
+                if (isActiveMentorship(mentResponse.data)) {
                     set({
                         coachContract: {
                             trainerId: mentResponse.data.coachId,
@@ -273,8 +275,10 @@ const useStore = create((set, get) => ({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            const activeMentorships = response.data.filter(isActiveMentorship);
+
             const mappedClients = await Promise.all(
-                response.data.map(async (m) => {
+                activeMentorships.map(async (m) => {
                     try {
                         const userResponse = await axios.get(`${API_AUTH_URL}/${m.clientId}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
@@ -340,7 +344,9 @@ const useStore = create((set, get) => ({
     assignCoachToClient: async (clientId, coachId) => {
         try {
             const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!token) {
+                throw new Error('Please log in before choosing a coach.');
+            }
 
             await axios.post(`${API_MENTORSHIP_URL}/assign?clientId=${clientId}&coachId=${coachId}`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -353,9 +359,10 @@ const useStore = create((set, get) => ({
                 }
             });
             console.log(`Successfully assigned coach ${coachId}`);
+            return true;
         } catch (error) {
             console.error("Error assigning coach:", error);
-            alert("Failed to assign coach.");
+            throw error;
         }
     },
 
@@ -634,6 +641,10 @@ const getChallengeError = (error, fallback) => (
     error.response?.data?.detail
     || error.response?.data?.message
     || fallback
+);
+
+const isActiveMentorship = (mentorship) => (
+    String(mentorship?.status ?? '').toUpperCase() === 'ACTIVE'
 );
 
 export default useStore;

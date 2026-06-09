@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/ai': 'http://localhost:8090',
+      '/api/ai': 'http://localhost:8086',
       '/api/training': 'http://localhost:8081',
       '/api/gamification': 'http://localhost:8082',
       '/api/challenges': 'http://localhost:8083',
