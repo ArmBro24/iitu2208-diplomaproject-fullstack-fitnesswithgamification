@@ -137,12 +137,6 @@ const ProfileReviews = ({ currentUserLabel, profileUserId }) => {
                 </div>
             </div>
 
-            {error && (
-                <p className="mt-4 rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm text-red-100">
-                    {error}
-                </p>
-            )}
-
             <form onSubmit={handleSubmit} className="mt-5 rounded-[22px] border border-white/10 bg-black/20 p-4">
                 <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
                     <div className="min-w-0">

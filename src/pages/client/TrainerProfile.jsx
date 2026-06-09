@@ -126,12 +126,6 @@ const TrainerProfile = () => {
                         <div className="w-full h-full overflow-hidden rounded-r-[80px] md:rounded-r-[150px] border-y border-r border-white/10 shadow-2xl">
                             <img src={trainer.img} alt={trainer.name} className="w-full h-full object-cover object-top" />
                         </div>
-                        <div className="absolute -bottom-6 right-[-20px] md:bottom-20 md:-right-8 z-20">
-                            <div className="bg-[#c1cf98] text-black p-5 md:p-8 rounded-3xl shadow-xl transform rotate-3">
-                                <span className="block text-4xl md:text-6xl font-black leading-none">{trainer.points}</span>
-                                <p className="text-[10px] uppercase tracking-widest font-bold opacity-70">points earned</p>
-                            </div>
-                        </div>
                     </div>
 
                     {/* ПРАВАЯ ЧАСТЬ */}
