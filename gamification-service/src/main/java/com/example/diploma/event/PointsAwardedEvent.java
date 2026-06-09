@@ -6,5 +6,6 @@ import java.time.LocalDateTime;
 public record PointsAwardedEvent(
         Long memberId,
         Integer points,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String category
 ) {}

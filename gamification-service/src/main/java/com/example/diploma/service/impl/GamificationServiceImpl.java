@@ -47,7 +47,7 @@ public class GamificationServiceImpl implements GamificationService {
     }
 
     @Override
-    public Character applyPoints(Long memberId, Integer delta, String comment) {
+    public Character applyPoints(Long memberId, Integer delta, String comment, String category) {
         if (memberId == null) {
             throw new IllegalArgumentException("Member id is required");
         }
@@ -97,11 +97,7 @@ public class GamificationServiceImpl implements GamificationService {
 
         if (safeDelta > 0) {
             pointsEventProducer.sendPointsAwarded(
-                    new PointsAwardedEvent(
-                            memberId,
-                            safeDelta,
-                            now
-                    )
+                    new PointsAwardedEvent(memberId, safeDelta, now, category)
             );
         }
 
@@ -109,7 +105,12 @@ public class GamificationServiceImpl implements GamificationService {
     }
 
     @Override
-    public Character applyTrainingPoints(Long sessionId, Long memberId, Integer points, String comment) {
+    public Character applyPoints(Long memberId, Integer delta, String comment) {
+        return applyPoints(memberId, delta, comment, null);
+    }
+
+    @Override
+    public Character applyTrainingPoints(Long sessionId, Long memberId, Integer points, String comment, String category) {
         if (sessionId == null) {
             throw new IllegalArgumentException("Session id is required");
         }
@@ -123,11 +124,7 @@ public class GamificationServiceImpl implements GamificationService {
         }
 
         if (pointsLedgerRepository.existsBySessionId(sessionId)) {
-            log.info(
-                    "Training points for session {} already processed. Skipping duplicate event.",
-                    sessionId
-            );
-
+            log.info("Training points for session {} already processed. Skipping duplicate event.", sessionId);
             return getCharacter(memberId);
         }
 
@@ -136,7 +133,6 @@ public class GamificationServiceImpl implements GamificationService {
 
         int currentXp = character.getXp() != null ? character.getXp() : 0;
         int currentTotalPoints = character.getTotalPoints() != null ? character.getTotalPoints() : 0;
-
         int oldLevel = character.getLevel() != null ? character.getLevel() : 1;
 
         int newXp = currentXp + points;
@@ -153,13 +149,8 @@ public class GamificationServiceImpl implements GamificationService {
         Character saved = characterRepository.save(updated);
 
         if (newLevel > oldLevel) {
-            log.info(
-                    "LEVEL UP: memberId={}, oldLevel={}, newLevel={}, xp={}",
-                    memberId,
-                    oldLevel,
-                    newLevel,
-                    newXp
-            );
+            log.info("LEVEL UP: memberId={}, oldLevel={}, newLevel={}, xp={}",
+                    memberId, oldLevel, newLevel, newXp);
         }
 
         PointsLedger ledger = PointsLedger.builder()
@@ -174,22 +165,18 @@ public class GamificationServiceImpl implements GamificationService {
         pointsLedgerRepository.save(ledger);
 
         pointsEventProducer.sendPointsAwarded(
-                new PointsAwardedEvent(
-                        memberId,
-                        points,
-                        LocalDateTime.now()
-                )
+                new PointsAwardedEvent(memberId, points, LocalDateTime.now(), category)
         );
 
-        log.info(
-                "Training points applied: sessionId={}, memberId={}, points={}, totalPoints={}",
-                sessionId,
-                memberId,
-                points,
-                saved.getTotalPoints()
-        );
+        log.info("Training points applied: sessionId={}, memberId={}, points={}, totalPoints={}",
+                sessionId, memberId, points, saved.getTotalPoints());
 
         return saved;
+    }
+
+    @Override
+    public Character applyTrainingPoints(Long sessionId, Long memberId, Integer points, String comment) {
+        return applyTrainingPoints(sessionId, memberId, points, comment, null);
     }
 
     @Override

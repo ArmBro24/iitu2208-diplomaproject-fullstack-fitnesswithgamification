@@ -17,18 +17,10 @@ public class TrainingEventConsumer {
     @KafkaListener(
             topics = KafkaTopics.TRAINING_LOG_APPROVED,
             groupId = "test-group-123",
-            containerFactory = "kafkaListenerContainerFactory"
+            containerFactory = "trainingKafkaListenerContainerFactory" // ОБНОВЛЕНО
     )
     public void onLogApproved(TrainingLogApprovedEvent event) {
         log.info("--- [DEBUG] СОБЫТИЕ ПРИШЛО В GAMIFICATION-SERVICE ---");
-        log.info("Данные: sessionId={}, memberId={}, points={}", event.sessionId(), event.memberId(), event.points());
-
-        log.info("GAMIFICATION RECEIVED: sessionId={}, memberId={}, points={}, approvedAt={}",
-                event.sessionId(),
-                event.memberId(),
-                event.points(),
-                event.approvedAt()
-        );
 
         String comment = "Approved training log. sessionId=" + event.sessionId();
 
