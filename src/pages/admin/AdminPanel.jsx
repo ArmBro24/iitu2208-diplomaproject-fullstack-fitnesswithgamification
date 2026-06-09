@@ -59,7 +59,8 @@ const AdminPanel = ({ onLogout }) => {
         try {
             await Promise.all([
                 fetchAdminDashboard().then(setDashboard),
-                fetchPendingTrainers()
+                fetchPendingTrainers(),
+                useStore.getState().fetchCategories() // <--- Добавили загрузку категорий
             ]);
         } catch (error) {
             setLoadError(error.response?.data?.message || 'Could not load administrator data.');
@@ -756,7 +757,16 @@ const ActionButton = ({ children, disabled, onClick, tone = 'default' }) => (
 );
 
 const ChallengeForm = ({ onCreated }) => {
-    const [form, setForm] = useState({ title: '', description: '', targetPoints: 100, rewardPoints: 50, startsAt: '', endsAt: '' });
+    const categories = useStore((state) => state.categories);
+    const [form, setForm] = useState({
+        title: '',
+        description: '',
+        targetPoints: 100,
+        rewardPoints: 50,
+        category: '',
+        startsAt: '',
+        endsAt: ''
+    });
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -769,14 +779,15 @@ const ChallengeForm = ({ onCreated }) => {
                 ...form,
                 targetPoints: Number(form.targetPoints),
                 rewardPoints: Number(form.rewardPoints),
+                category: form.category || null,
                 startsAt: new Date(form.startsAt).toISOString(),
                 endsAt: new Date(form.endsAt).toISOString(),
             });
-            setFeedback('Challenge published to users.');
-            setForm({ title: '', description: '', targetPoints: 100, rewardPoints: 50, startsAt: '', endsAt: '' });
+            setFeedback('Challenge published successfully.');
+            setForm({ title: '', description: '', targetPoints: 100, rewardPoints: 50, category: '', startsAt: '', endsAt: '' });
             await onCreated();
         } catch (error) {
-            setFeedback(error.response?.data?.message || 'Challenge could not be created.');
+            setFeedback(error.response?.data?.message || 'Failed to create challenge.');
         } finally {
             setSubmitting(false);
         }
@@ -785,18 +796,39 @@ const ChallengeForm = ({ onCreated }) => {
     return (
         <Panel title="Publish Challenge" eyebrow="Admin Action">
             <form className="space-y-3" onSubmit={submit}>
-                <FormInput label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
-                <FormInput label="Description" value={form.description} onChange={(value) => setForm({ ...form, description: value })} />
+                <FormInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} required />
+                <FormInput label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} />
+
+                <label className="block">
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-[0.16em] text-white/45">Workout Category</span>
+                    <select
+                        value={form.category}
+                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                        className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-[#c1cf98]/40"
+                    >
+                        <option value="">Any Category</option>
+                        {categories?.map((cat) => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
+                    </select>
+                </label>
+
                 <div className="grid gap-3 sm:grid-cols-2">
-                    <FormInput label="Target points" type="number" value={form.targetPoints} onChange={(value) => setForm({ ...form, targetPoints: value })} required />
-                    <FormInput label="Reward points" type="number" value={form.rewardPoints} onChange={(value) => setForm({ ...form, rewardPoints: value })} required />
+                    <FormInput label="Target points" type="number" value={form.targetPoints} onChange={(v) => setForm({ ...form, targetPoints: v })} required />
+                    <FormInput label="Reward points" type="number" value={form.rewardPoints} onChange={(v) => setForm({ ...form, rewardPoints: v })} required />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                    <FormInput label="Starts" type="datetime-local" value={form.startsAt} onChange={(value) => setForm({ ...form, startsAt: value })} required />
-                    <FormInput label="Ends" type="datetime-local" value={form.endsAt} onChange={(value) => setForm({ ...form, endsAt: value })} required />
+                    <FormInput label="Starts" type="datetime-local" value={form.startsAt} onChange={(v) => setForm({ ...form, startsAt: v })} required />
+                    <FormInput label="Ends" type="datetime-local" value={form.endsAt} onChange={(v) => setForm({ ...form, endsAt: v })} required />
                 </div>
+
                 {feedback && <p className="text-sm text-[#dfe9bf]">{feedback}</p>}
-                <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-[#c1cf98] px-5 py-3 text-sm font-black text-[#111412] disabled:opacity-60">
+
+                <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#c1cf98] px-5 py-3 text-sm font-black text-[#111412] disabled:opacity-60"
+                >
                     <FiPlus /> {submitting ? 'Publishing...' : 'Publish challenge'}
                 </button>
             </form>

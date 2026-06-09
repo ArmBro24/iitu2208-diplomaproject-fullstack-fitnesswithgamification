@@ -47,6 +47,7 @@ const mapChallengeForClient = (challenge, index) => {
 
     return {
         id: challenge.id,
+        category: challenge.category,
         title: challenge.title,
         points: challenge.targetPoints,
         desc: challenge.description || 'Complete this challenge to earn points.',
@@ -60,7 +61,6 @@ const mapChallengeForClient = (challenge, index) => {
         color: challengeColors[index % challengeColors.length]
     };
 };
-
 const useStore = create((set, get) => ({
     currentUser: {
         id: localStorage.getItem('userId') || null,
