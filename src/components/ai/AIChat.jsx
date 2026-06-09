@@ -15,7 +15,7 @@ const getInitialMessages = (needsProfileSetup) => [
     {
         role: 'assistant',
         content: needsProfileSetup
-            ? 'Привет. Чтобы давать точные советы, сначала запомню твои базовые параметры: рост, вес, цель, уровень и ограничения по здоровью.'
+            ? 'Hi. To give accurate advice, I will first remember your basic parameters: height, weight, goal, training level, and health limitations.'
             : 'Hi. Ask me about workouts, recovery, or nutrition. I will keep it short and practical.',
     },
 ];
@@ -30,6 +30,7 @@ const emptyProfileForm = {
 
 const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) => {
     const { currentUser, userStats, challenges, sessions } = useStore();
+
     const profileOwner = useMemo(
         () => selectedClient
             ? { ...selectedClient, role: selectedClient.role ?? 'client' }
@@ -96,7 +97,7 @@ const AIChat = ({ onClose, selectedClient, assignedWorkouts, scheduleItems }) =>
             ...current,
             {
                 role: 'assistant',
-                content: 'Готово, я запомнил профиль. Теперь можешь спрашивать про тренировки, питание, восстановление или план под твою цель.',
+                content: 'Done, I saved your profile. Now you can ask about workouts, nutrition, recovery, or a plan for your goal.',
             },
         ]);
     };
@@ -287,9 +288,9 @@ const renderInlineMarkdown = (text) => {
 
 const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
     <form onSubmit={onSave} className="rounded-[22px] border border-[#c1cf98]/25 bg-[#c1cf98]/[0.07] p-4">
-        <p className="text-sm font-bold text-[#f5efe7]">Профиль для AI coach</p>
+        <p className="text-sm font-bold text-[#f5efe7]">AI coach profile</p>
         <p className="mt-1 text-xs leading-relaxed text-white/55">
-            Эти данные сохранятся локально и будут подставляться в следующие рекомендации.
+            These details are saved locally and used in future recommendations.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -312,7 +313,7 @@ const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
                 label="Goal"
                 value={profileForm.fitnessGoal}
                 onChange={(value) => onChange('fitnessGoal', value)}
-                placeholder="похудение, сила, выносливость..."
+                placeholder="weight loss, strength, endurance..."
             />
             <ProfileInput
                 label="Level"
@@ -324,7 +325,7 @@ const ProfileSetupForm = ({ profileForm, onChange, onSave, onSkip }) => (
                 label="Limitations"
                 value={profileForm.limitations}
                 onChange={(value) => onChange('limitations', value)}
-                placeholder="травмы, ограничения, нет"
+                placeholder="injuries, limitations, none"
             />
         </div>
 

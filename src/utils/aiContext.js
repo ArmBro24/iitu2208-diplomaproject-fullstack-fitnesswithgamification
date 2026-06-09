@@ -164,21 +164,6 @@ export const migrateLegacyAIProfileMemory = (owner) => {
     }
 };
 
-/*
- * Kept as a tiny compatibility wrapper for old call sites. New code should pass
- * the profile owner, so AI memory stays isolated per member/coach/client.
- */
-export const loadLegacyAIProfileMemory = () => {
-    if (typeof window === 'undefined') return null;
-
-    try {
-        const raw = window.localStorage.getItem(LEGACY_AI_PROFILE_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-};
-
 const compactSession = (session = {}) => ({
     id: session.id,
     title: session.title ?? session.name ?? session.workout,
