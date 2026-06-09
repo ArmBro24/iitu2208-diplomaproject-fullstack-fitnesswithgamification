@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class AiChatRequest {
@@ -14,4 +15,6 @@ public class AiChatRequest {
 
     @Valid
     private List<AiMessageDto> messages;
+
+    private Map<String, Object> userContext;
 }
